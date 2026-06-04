@@ -1,0 +1,70 @@
+# Documents
+*.docx
+*.doc
+*.xlsx
+*.xls
+*.pptx
+*.ppt
+*.pdf
+
+# Markdown (except README.md)
+*.md
+!README.md
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+.next/
+dist/
+build/
+out/
+
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Cache & Turbo
+.turbo/
+.cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Laravel specific
+apps/api/.env
+apps/api/storage/logs/*.log
+apps/api/storage/framework/cache/
+apps/api/storage/framework/sessions/
+apps/api/storage/framework/views/
+apps/api/vendor/
+apps/api/public/hot
+apps/api/bootstrap/cache/*.php
+!apps/api/bootstrap/cache/.gitignore
+apps/api/database/database.sqlite
+
+# Next.js specific
+apps/web/.env*
+apps/admin/.env*
+!apps/web/.env.example
+!apps/admin/.env.example
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Claude / AI tooling
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+AGENTS.md

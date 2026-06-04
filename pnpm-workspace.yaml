@@ -1,0 +1,9 @@
+packages:
+  - 'apps/web'
+  - 'apps/admin'
+  - 'packages/*'
+  # apps/api (Laravel/PHP) dikecualikan — dikelola via composer secara terpisah
+
+ignoredBuiltDependencies:
+  - sharp
+  - unrs-resolver

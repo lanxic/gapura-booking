@@ -1,0 +1,52 @@
+{
+  "nav": {
+    "login": "Sign In",
+    "register": "Register",
+    "myOrders": "My Orders"
+  },
+  "home": {
+    "hero": {
+      "title": "Buy Tickets Online",
+      "subtitle": "Book your favourite attractions easily and securely"
+    },
+    "filter": {
+      "all": "All",
+      "safariDay": "Day Safari",
+      "safariNight": "Night Safari",
+      "vip": "VIP",
+      "family": "Family"
+    }
+  },
+  "product": {
+    "checkAvailability": "Check Availability",
+    "selectTicket": "Ticket Options",
+    "adult": "Adult",
+    "child": "Child",
+    "childFree": "Children < 3 yrs: Free",
+    "addons": "Add-ons",
+    "continueCheckout": "Continue to Checkout",
+    "from": "From",
+    "perPerson": "/ person"
+  },
+  "checkout": {
+    "guestData": "Booking Details",
+    "name": "Full Name",
+    "email": "Email",
+    "phone": "Phone Number",
+    "paymentOption": "Payment Option",
+    "fullPayment": "Full Payment",
+    "downPayment": "Down Payment",
+    "payNow": "Pay now",
+    "payLater": "Remaining at cashier",
+    "voucher": "Voucher Code",
+    "applyVoucher": "Apply",
+    "total": "Total",
+    "proceedPayment": "Proceed to Payment"
+  },
+  "booking": {
+    "success": "Booking Successful!",
+    "downloadTicket": "Download E-Ticket PDF",
+    "remainingInfo": "Remaining balance Rp {amount} payable at the cashier on arrival",
+    "buyAgain": "Buy Another Ticket"
+  }
+}
