@@ -53,7 +53,7 @@ class KasirOrderController extends Controller
 
         $validator = Validator::make($request->all(), [
             'amount'  => 'required|integer|min:1',
-            'gateway' => 'required|in:cash,midtrans',
+            'gateway' => 'required|in:cash,midtrans,doku',
             'notes'   => 'nullable|string|max:255',
         ]);
 

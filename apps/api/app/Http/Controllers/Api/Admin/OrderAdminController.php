@@ -13,7 +13,7 @@ class OrderAdminController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $orders = Order::with(['items.product', 'payments'])
+        $orders = Order::with(['items.variant.product', 'payments'])
             ->when($request->status,  fn($q, $s) => $q->where('status', $s))
             ->when($request->search,  fn($q, $s) => $q->where('booking_code', 'like', "%$s%")
                 ->orWhere('customer_name', 'like', "%$s%")
@@ -36,7 +36,7 @@ class OrderAdminController extends Controller
 
     public function show(int $id): JsonResponse
     {
-        $order = Order::with(['items.product', 'items.variant', 'items.tickets', 'payments', 'vouchers'])
+        $order = Order::with(['items.variant.product', 'items.availabilitySlot', 'items.tickets', 'payments', 'vouchers'])
             ->findOrFail($id);
 
         return response()->json(['data' => $order]);

@@ -23,13 +23,40 @@ use App\Http\Controllers\Api\Admin\UserManagementController;
 use App\Http\Controllers\Api\Admin\ActivityLogAdminController;
 use App\Http\Controllers\Api\Admin\SettingsController;
 use App\Http\Controllers\Api\CorrectionController;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Route;
 
-// ─── Health Check ───────────────────────────────────────────────────────────
-Route::get('/health', fn() => response()->json(['status' => 'ok', 'db' => 'ok', 'redis' => 'ok']));
-
-// ─── Public Routes ────────────────────────────────────────────────────────────
+// ─── v1 Routes ───────────────────────────────────────────────────────────────
 Route::prefix('v1')->group(function () {
+
+    // Health Check
+    Route::get('health', function () {
+        $db = 'ok';
+        $redis = 'ok';
+
+        try {
+            DB::connection()->getPdo();
+        } catch (\Throwable) {
+            $db = 'error';
+        }
+
+        try {
+            Redis::ping();
+        } catch (\Throwable) {
+            $redis = 'error';
+        }
+
+        $healthy = $db === 'ok' && $redis === 'ok';
+
+        return response()->json([
+            'status' => $healthy ? 'ok' : 'degraded',
+            'db'     => $db,
+            'redis'  => $redis,
+        ], $healthy ? 200 : 503);
+    });
+
+    // ─── Public Routes ──────────────────────────────────────────────────────
 
     Route::get('products', [ProductController::class, 'index']);
     Route::get('products/{slug}', [ProductController::class, 'show']);
@@ -41,7 +68,9 @@ Route::prefix('v1')->group(function () {
     Route::post('orders/{bookingCode}/apply-voucher', [PublicOrderController::class, 'applyVoucher']);
     Route::get('orders/{bookingCode}', [PublicOrderController::class, 'show']);
 
+    Route::post('orders/{bookingCode}/pay', [PublicPaymentController::class, 'initiate']);
     Route::post('payments/midtrans/notification', [PublicPaymentController::class, 'midtransWebhook']);
+    Route::post('payments/doku/notification',     [PublicPaymentController::class, 'dokuWebhook']);
     Route::get('tickets/{qrCode}/verify', [PublicPaymentController::class, 'verifyTicket']);
 
     // ─── Auth Routes ────────────────────────────────────────────────────────

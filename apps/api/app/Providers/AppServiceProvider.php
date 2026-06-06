@@ -22,6 +22,7 @@ class AppServiceProvider extends ServiceProvider
     private function bootGatewayConfig(): void
     {
         try {
+            // ── Midtrans ────────────────────────────────────────────────────
             $midtrans = Cache::remember('gateway_midtrans_config', 300, fn() => SiteSetting::getGroup('gateway_midtrans'));
             $isProd   = ($midtrans['environment'] ?? 'sandbox') === 'production';
 
@@ -32,6 +33,20 @@ class AppServiceProvider extends ServiceProvider
                 'services.midtrans.snap_url'      => $isProd
                     ? 'https://app.midtrans.com/snap/snap.js'
                     : 'https://app.sandbox.midtrans.com/snap/snap.js',
+            ]);
+
+            // ── DOKU ────────────────────────────────────────────────────────
+            $doku       = Cache::remember('gateway_doku_config', 300, fn() => SiteSetting::getGroup('gateway_doku'));
+            $dokuIsProd = ($doku['environment'] ?? 'sandbox') === 'production';
+
+            config([
+                'services.doku.enabled'        => filter_var($doku['enabled'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                'services.doku.client_id'      => $doku['client_id']  ?? '',
+                'services.doku.secret_key'     => $doku['secret_key'] ?? '',
+                'services.doku.is_production'  => $dokuIsProd,
+                'services.doku.base_url'       => $dokuIsProd
+                    ? 'https://api.doku.com'
+                    : 'https://api-sandbox.doku.com',
             ]);
         } catch (\Throwable) {
             // DB belum tersedia — pakai env defaults

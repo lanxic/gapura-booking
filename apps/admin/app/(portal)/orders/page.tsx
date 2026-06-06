@@ -3,9 +3,26 @@
 import { useAdminAuthStore } from '@/store/auth'
 import { api } from '@/lib/api'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ShoppingBag, Search, Calendar, User, GripVertical } from 'lucide-react'
+import { ShoppingBag, Search, Calendar, User, GripVertical, Receipt } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
+import { OrderDetailModal } from '@/components/shared/OrderDetailModal'
+
+const PAYMENT_STATUS_LABEL: Record<string, string> = {
+  pending:  'Menunggu',
+  success:  'Lunas',
+  failed:   'Gagal',
+  expired:  'Expired',
+  refunded: 'Dikembalikan',
+}
+
+const PAYMENT_STATUS_CLS: Record<string, string> = {
+  pending:  'bg-amber-50 text-amber-700',
+  success:  'bg-emerald-50 text-emerald-700',
+  failed:   'bg-red-50 text-red-600',
+  expired:  'bg-slate-50 text-slate-500',
+  refunded: 'bg-gray-50 text-gray-500',
+}
 
 // ── Column definitions ────────────────────────────────────────────────────────
 
@@ -22,18 +39,20 @@ const COLUMNS = [
 
 // ── OrderCard ─────────────────────────────────────────────────────────────────
 
-function OrderCard({ order, statusKey, isDragging, onDragStart, onDragEnd }: {
+function OrderCard({ order, statusKey, isDragging, onDragStart, onDragEnd, onSelect }: {
   order: any
   statusKey: string
   isDragging: boolean
   onDragStart: (e: React.DragEvent<HTMLDivElement>, order: any, fromStatus: string) => void
   onDragEnd: () => void
+  onSelect: (id: number) => void
 }) {
   return (
     <div
       draggable
       onDragStart={e => onDragStart(e, order, statusKey)}
       onDragEnd={onDragEnd}
+      onClick={() => onSelect(order.id)}
       className={cn(
         'group bg-card border border-border rounded-xl p-3.5 space-y-2.5 select-none',
         'cursor-grab active:cursor-grabbing transition-all duration-150',
@@ -71,6 +90,27 @@ function OrderCard({ order, statusKey, isDragging, onDragStart, onDragEnd }: {
           day: 'numeric', month: 'short', year: 'numeric',
         })}
       </div>
+
+      {/* Invoice / payment terakhir */}
+      {order.payments && order.payments.length > 0 && (() => {
+        const last = order.payments[order.payments.length - 1]
+        return (
+          <div className="flex items-center justify-between gap-1.5 pt-1 border-t border-border/60">
+            <div className="flex items-center gap-1 min-w-0">
+              <Receipt size={10} className="shrink-0 text-muted-foreground/60" />
+              <span className="font-mono text-[9px] text-muted-foreground truncate">
+                {last.invoice_number ?? 'cash'}
+              </span>
+            </div>
+            <span className={cn(
+              'text-[9px] font-semibold px-1.5 py-0.5 rounded-full shrink-0',
+              PAYMENT_STATUS_CLS[last.status] ?? 'bg-gray-50 text-gray-500',
+            )}>
+              {PAYMENT_STATUS_LABEL[last.status] ?? last.status}
+            </span>
+          </div>
+        )
+      })()}
     </div>
   )
 }
@@ -78,7 +118,7 @@ function OrderCard({ order, statusKey, isDragging, onDragStart, onDragEnd }: {
 // ── KanbanColumn ──────────────────────────────────────────────────────────────
 
 function KanbanColumn({ statusKey, label, headerCls, dotCls, search, token,
-  isDragOver, draggingId, onDragStart, onDragEnd, onDragOver, onDragLeave, onDrop,
+  isDragOver, draggingId, onDragStart, onDragEnd, onDragOver, onDragLeave, onDrop, onSelect,
 }: {
   statusKey: string
   label: string
@@ -93,6 +133,7 @@ function KanbanColumn({ statusKey, label, headerCls, dotCls, search, token,
   onDragOver: (e: React.DragEvent<HTMLDivElement>) => void
   onDragLeave: (e: React.DragEvent<HTMLDivElement>) => void
   onDrop: (e: React.DragEvent<HTMLDivElement>) => void
+  onSelect: (id: number) => void
 }) {
   const { data, isLoading } = useQuery({
     queryKey: ['admin-orders-kanban', statusKey, search],
@@ -155,6 +196,7 @@ function KanbanColumn({ statusKey, label, headerCls, dotCls, search, token,
                 isDragging={draggingId === order.id}
                 onDragStart={onDragStart}
                 onDragEnd={onDragEnd}
+                onSelect={onSelect}
               />
             ))
         }
@@ -174,10 +216,11 @@ export default function OrdersPage() {
   const token = useAdminAuthStore(s => s.token)
   const qc    = useQueryClient()
 
-  const [searchInput, setSearchInput] = useState('')
-  const [search,      setSearch]      = useState('')
-  const [dragOver,    setDragOver]    = useState<string | null>(null)
-  const [dragging,    setDragging]    = useState<{ id: number; fromStatus: string } | null>(null)
+  const [searchInput,     setSearchInput]     = useState('')
+  const [search,          setSearch]          = useState('')
+  const [dragOver,        setDragOver]        = useState<string | null>(null)
+  const [dragging,        setDragging]        = useState<{ id: number; fromStatus: string } | null>(null)
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null)
 
   useEffect(() => {
     const t = setTimeout(() => setSearch(searchInput), 400)
@@ -210,6 +253,7 @@ export default function OrdersPage() {
   }
 
   return (
+    <>
     <div className="flex flex-col gap-6">
 
       {/* Header */}
@@ -252,10 +296,18 @@ export default function OrdersPage() {
             onDragOver={e => { e.preventDefault(); setDragOver(col.key) }}
             onDragLeave={() => setDragOver(null)}
             onDrop={e => handleDrop(e, col.key)}
+            onSelect={setSelectedOrderId}
           />
         ))}
       </div>
 
     </div>
+
+    <OrderDetailModal
+      orderId={selectedOrderId}
+      token={token!}
+      onClose={() => setSelectedOrderId(null)}
+    />
+    </>
   )
 }

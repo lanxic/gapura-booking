@@ -14,8 +14,9 @@ return new class extends Migration
         });
 
         // Tambah invoice_number di payments — ini yang dikirim ke Midtrans sebagai order_id
+        // nullable karena pembayaran cash tidak punya invoice number
         Schema::table('payments', function (Blueprint $table) {
-            $table->string('invoice_number', 30)->unique()->after('order_id');
+            $table->string('invoice_number', 30)->nullable()->unique()->after('order_id');
         });
     }
 
