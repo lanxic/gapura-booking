@@ -21,7 +21,7 @@ class OrderAdminController extends Controller
             ->when($request->from, fn($q, $f) => $q->whereDate('created_at', '>=', $f))
             ->when($request->to,   fn($q, $t) => $q->whereDate('created_at', '<=', $t))
             ->latest()
-            ->paginate(20);
+            ->paginate(min($request->integer('per_page', 20), 100));
 
         return response()->json([
             'data' => $orders->items(),

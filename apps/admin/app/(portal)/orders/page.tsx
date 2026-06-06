@@ -2,136 +2,260 @@
 
 import { useAdminAuthStore } from '@/store/auth'
 import { api } from '@/lib/api'
-import { useQuery } from '@tanstack/react-query'
-import { ShoppingBag, Search } from 'lucide-react'
-import { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { ShoppingBag, Search, Calendar, User, GripVertical } from 'lucide-react'
+import { useState, useEffect } from 'react'
 import { cn } from '@/lib/utils'
 
-const STATUS_COLORS: Record<string, string> = {
-  pending:          'bg-yellow-50 text-yellow-700',
-  awaiting_payment: 'bg-orange-50 text-orange-700',
-  dp_paid:          'bg-blue-50 text-blue-700',
-  paid:             'bg-emerald-50 text-emerald-700',
-  confirmed:        'bg-green-50 text-green-700',
-  cancelled:        'bg-red-50 text-red-700',
-  refunded:         'bg-gray-50 text-gray-700',
-  expired:          'bg-gray-50 text-gray-500',
+// ── Column definitions ────────────────────────────────────────────────────────
+
+const COLUMNS = [
+  { key: 'pending',          label: 'Menunggu',            headerCls: 'bg-amber-50 border-amber-200 text-amber-700',       dotCls: 'bg-amber-400' },
+  { key: 'awaiting_payment', label: 'Menunggu Pembayaran', headerCls: 'bg-orange-50 border-orange-200 text-orange-700',    dotCls: 'bg-orange-400' },
+  { key: 'dp_paid',          label: 'DP Terbayar',         headerCls: 'bg-blue-50 border-blue-200 text-blue-700',          dotCls: 'bg-blue-500' },
+  { key: 'paid',             label: 'Lunas',               headerCls: 'bg-emerald-50 border-emerald-200 text-emerald-700', dotCls: 'bg-emerald-500' },
+  { key: 'confirmed',        label: 'Dikonfirmasi',        headerCls: 'bg-green-50 border-green-200 text-green-700',       dotCls: 'bg-green-500' },
+  { key: 'cancelled',        label: 'Dibatalkan',          headerCls: 'bg-red-50 border-red-200 text-red-700',             dotCls: 'bg-red-400' },
+  { key: 'refunded',         label: 'Dikembalikan',        headerCls: 'bg-gray-50 border-gray-200 text-gray-600',          dotCls: 'bg-gray-400' },
+  { key: 'expired',          label: 'Kedaluwarsa',         headerCls: 'bg-slate-50 border-slate-200 text-slate-500',       dotCls: 'bg-slate-300' },
+]
+
+// ── OrderCard ─────────────────────────────────────────────────────────────────
+
+function OrderCard({ order, statusKey, isDragging, onDragStart, onDragEnd }: {
+  order: any
+  statusKey: string
+  isDragging: boolean
+  onDragStart: (e: React.DragEvent<HTMLDivElement>, order: any, fromStatus: string) => void
+  onDragEnd: () => void
+}) {
+  return (
+    <div
+      draggable
+      onDragStart={e => onDragStart(e, order, statusKey)}
+      onDragEnd={onDragEnd}
+      className={cn(
+        'group bg-card border border-border rounded-xl p-3.5 space-y-2.5 select-none',
+        'cursor-grab active:cursor-grabbing transition-all duration-150',
+        isDragging
+          ? 'opacity-40 scale-[0.97] shadow-none'
+          : 'hover:shadow-md hover:border-primary/25',
+      )}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <GripVertical
+            size={12}
+            className="shrink-0 text-muted-foreground/30 group-hover:text-muted-foreground/60 transition-colors"
+          />
+          <span className="font-mono text-[11px] font-semibold text-foreground tracking-wide truncate">
+            {order.booking_code}
+          </span>
+        </div>
+        <span className="text-xs font-bold text-foreground tabular-nums shrink-0">
+          Rp {order.total?.toLocaleString('id-ID')}
+        </span>
+      </div>
+
+      <div className="flex items-start gap-1.5">
+        <User size={11} className="text-muted-foreground shrink-0 mt-0.5" />
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-foreground truncate leading-tight">{order.customer_name}</p>
+          <p className="text-[10px] text-muted-foreground truncate leading-tight">{order.customer_email}</p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+        <Calendar size={10} className="shrink-0" />
+        {new Date(order.created_at).toLocaleDateString('id-ID', {
+          day: 'numeric', month: 'short', year: 'numeric',
+        })}
+      </div>
+    </div>
+  )
 }
 
-export default function OrdersPage() {
-  const token = useAdminAuthStore(s => s.token)
-  const [search, setSearch] = useState('')
-  const [status, setStatus] = useState('')
-  const [page, setPage] = useState(1)
+// ── KanbanColumn ──────────────────────────────────────────────────────────────
 
+function KanbanColumn({ statusKey, label, headerCls, dotCls, search, token,
+  isDragOver, draggingId, onDragStart, onDragEnd, onDragOver, onDragLeave, onDrop,
+}: {
+  statusKey: string
+  label: string
+  headerCls: string
+  dotCls: string
+  search: string
+  token: string
+  isDragOver: boolean
+  draggingId: number | null
+  onDragStart: (e: React.DragEvent<HTMLDivElement>, order: any, fromStatus: string) => void
+  onDragEnd: () => void
+  onDragOver: (e: React.DragEvent<HTMLDivElement>) => void
+  onDragLeave: (e: React.DragEvent<HTMLDivElement>) => void
+  onDrop: (e: React.DragEvent<HTMLDivElement>) => void
+}) {
   const { data, isLoading } = useQuery({
-    queryKey: ['admin-orders', search, status, page],
-    queryFn: () => api.get<any>(`/admin/orders?search=${search}&status=${status}&page=${page}`, { token: token! }),
+    queryKey: ['admin-orders-kanban', statusKey, search],
+    queryFn:  () => api.get<any>(
+      `/admin/orders?status=${statusKey}&search=${encodeURIComponent(search)}&per_page=50`,
+      { token },
+    ),
     enabled: !!token,
   })
 
-  const orders = data?.data ?? []
-  const meta   = data?.meta ?? {}
+  const orders: any[] = data?.data ?? []
+  const total: number  = data?.meta?.total ?? 0
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <ShoppingBag size={24} className="text-muted-foreground" />
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Pesanan</h1>
-          <p className="text-sm text-muted-foreground">Kelola semua pesanan tiket</p>
+    <div className="w-[272px] shrink-0 flex flex-col gap-2.5">
+      {/* Header */}
+      <div className={cn(
+        'flex items-center justify-between px-3 py-2.5 rounded-xl border transition-all duration-150',
+        headerCls,
+        isDragOver && 'scale-[1.02] shadow-sm',
+      )}>
+        <div className="flex items-center gap-2">
+          <span className={cn('w-2 h-2 rounded-full shrink-0', dotCls)} />
+          <span className="text-xs font-semibold leading-none">{label}</span>
         </div>
+        <span className="text-xs font-bold tabular-nums">
+          {isLoading ? '…' : total}
+        </span>
       </div>
 
-      <div className="flex gap-3 flex-wrap">
-        <div className="relative flex-1 min-w-48">
+      {/* Drop zone */}
+      <div
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+        className={cn(
+          'flex flex-col gap-2 overflow-y-auto rounded-xl p-1 -m-1 transition-colors duration-150',
+          isDragOver && 'bg-primary/5 ring-2 ring-inset ring-primary/20',
+        )}
+        style={{ maxHeight: 'calc(100dvh - 215px)' }}
+      >
+        {isLoading
+          ? Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-[88px] rounded-xl bg-muted animate-pulse" />
+            ))
+          : orders.length === 0
+            ? (
+              <div className={cn(
+                'flex items-center justify-center py-10 rounded-xl border-2 border-dashed transition-colors duration-150',
+                isDragOver ? 'border-primary/40 text-primary/60' : 'border-border text-muted-foreground/40',
+              )}>
+                <span className="text-[11px]">{isDragOver ? 'Lepaskan di sini' : 'Kosong'}</span>
+              </div>
+            )
+            : orders.map((order: any) => (
+              <OrderCard
+                key={order.id}
+                order={order}
+                statusKey={statusKey}
+                isDragging={draggingId === order.id}
+                onDragStart={onDragStart}
+                onDragEnd={onDragEnd}
+              />
+            ))
+        }
+        {!isLoading && total > orders.length && (
+          <p className="text-[10px] text-center text-muted-foreground pb-1 tabular-nums">
+            +{total - orders.length} pesanan lainnya
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
+
+export default function OrdersPage() {
+  const token = useAdminAuthStore(s => s.token)
+  const qc    = useQueryClient()
+
+  const [searchInput, setSearchInput] = useState('')
+  const [search,      setSearch]      = useState('')
+  const [dragOver,    setDragOver]    = useState<string | null>(null)
+  const [dragging,    setDragging]    = useState<{ id: number; fromStatus: string } | null>(null)
+
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchInput), 400)
+    return () => clearTimeout(t)
+  }, [searchInput])
+
+  const moveMutation = useMutation({
+    mutationFn: ({ id, status }: { id: number; status: string }) =>
+      api.put<any>(`/admin/orders/${id}/status`, { status }, { token: token! }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-orders-kanban'] })
+    },
+  })
+
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, order: any, fromStatus: string) => {
+    e.dataTransfer.effectAllowed = 'move'
+    setDragging({ id: order.id, fromStatus })
+  }
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>, toStatus: string) => {
+    e.preventDefault()
+    if (!dragging || dragging.fromStatus === toStatus) {
+      setDragging(null)
+      setDragOver(null)
+      return
+    }
+    moveMutation.mutate({ id: dragging.id, status: toStatus })
+    setDragging(null)
+    setDragOver(null)
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-3">
+          <ShoppingBag size={24} className="text-muted-foreground" />
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Pesanan</h1>
+            <p className="text-sm text-muted-foreground">Drag kartu untuk mengubah status pesanan</p>
+          </div>
+        </div>
+
+        <div className="relative w-72">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Cari booking code / nama / email..."
-            value={search}
-            onChange={e => { setSearch(e.target.value); setPage(1) }}
+            placeholder="Cari booking code / nama / email…"
+            value={searchInput}
+            onChange={e => setSearchInput(e.target.value)}
             className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
-        <select
-          value={status}
-          onChange={e => { setStatus(e.target.value); setPage(1) }}
-          className="px-3 py-2 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-        >
-          <option value="">Semua Status</option>
-          {Object.keys(STATUS_COLORS).map(s => (
-            <option key={s} value={s}>{s.replace('_', ' ')}</option>
-          ))}
-        </select>
       </div>
 
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border bg-muted/30">
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Booking Code</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Pelanggan</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Total</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Tanggal</th>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <tr key={i} className="border-b border-border">
-                  {Array.from({ length: 5 }).map((_, j) => (
-                    <td key={j} className="px-4 py-3">
-                      <div className="h-4 bg-muted rounded animate-pulse" />
-                    </td>
-                  ))}
-                </tr>
-              ))
-            ) : orders.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">Tidak ada pesanan.</td>
-              </tr>
-            ) : orders.map((order: any) => (
-              <tr key={order.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
-                <td className="px-4 py-3 font-mono font-medium">{order.booking_code}</td>
-                <td className="px-4 py-3">
-                  <p className="font-medium text-foreground">{order.customer_name}</p>
-                  <p className="text-xs text-muted-foreground">{order.customer_email}</p>
-                </td>
-                <td className="px-4 py-3">
-                  Rp {order.total?.toLocaleString('id-ID')}
-                </td>
-                <td className="px-4 py-3">
-                  <span className={cn('px-2 py-0.5 rounded-md text-xs font-medium', STATUS_COLORS[order.status?.value ?? order.status] ?? 'bg-gray-50 text-gray-700')}>
-                    {order.status?.value ?? order.status}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-muted-foreground text-xs">
-                  {new Date(order.created_at).toLocaleDateString('id-ID')}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {/* Kanban board */}
+      <div className="flex gap-3 overflow-x-auto pb-4 -mx-1 px-1">
+        {COLUMNS.map(col => (
+          <KanbanColumn
+            key={col.key}
+            statusKey={col.key}
+            label={col.label}
+            headerCls={col.headerCls}
+            dotCls={col.dotCls}
+            search={search}
+            token={token!}
+            isDragOver={dragOver === col.key}
+            draggingId={dragging?.id ?? null}
+            onDragStart={handleDragStart}
+            onDragEnd={() => setDragging(null)}
+            onDragOver={e => { e.preventDefault(); setDragOver(col.key) }}
+            onDragLeave={() => setDragOver(null)}
+            onDrop={e => handleDrop(e, col.key)}
+          />
+        ))}
       </div>
 
-      {meta.lastPage > 1 && (
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>Total: {meta.total} pesanan</span>
-          <div className="flex gap-2">
-            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-              className="px-3 py-1.5 rounded-md border border-border hover:bg-accent disabled:opacity-40 transition-colors">
-              Sebelumnya
-            </button>
-            <span className="px-3 py-1.5">{page} / {meta.lastPage}</span>
-            <button onClick={() => setPage(p => Math.min(meta.lastPage, p + 1))} disabled={page === meta.lastPage}
-              className="px-3 py-1.5 rounded-md border border-border hover:bg-accent disabled:opacity-40 transition-colors">
-              Berikutnya
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

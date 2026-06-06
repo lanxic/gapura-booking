@@ -3,18 +3,18 @@
 import { useAdminAuthStore } from '@/store/auth'
 import { api } from '@/lib/api'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { SlidersHorizontal, Upload, Save, Loader2, CheckCircle, AlertCircle, Eye, EyeOff, Wifi, Send, ChevronDown, X } from 'lucide-react'
+import { SlidersHorizontal, Upload, Save, Loader2, CheckCircle, AlertCircle, Eye, EyeOff, Wifi, Send, ChevronDown, X, Globe, CreditCard, Bell, Mail, Cloud } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { cn } from '@/lib/utils'
 
 type Tab = 'umum' | 'pembayaran' | 'notifikasi' | 'email' | 'cloudinary'
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: 'umum',       label: 'Umum' },
-  { id: 'pembayaran', label: 'Pembayaran' },
-  { id: 'notifikasi', label: 'Notifikasi' },
-  { id: 'email',      label: 'Email' },
-  { id: 'cloudinary', label: 'Cloudinary' },
+const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
+  { id: 'umum',       label: 'Umum',        icon: Globe },
+  { id: 'pembayaran', label: 'Pembayaran',   icon: CreditCard },
+  { id: 'notifikasi', label: 'Notifikasi',   icon: Bell },
+  { id: 'email',      label: 'Email',        icon: Mail },
+  { id: 'cloudinary', label: 'Cloudinary',   icon: Cloud },
 ]
 
 const DP_OPTIONS = [30, 50, 70]
@@ -1104,34 +1104,42 @@ export default function SettingsGeneralPage() {
   const [tab, setTab] = useState<Tab>('umum')
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6">
       <div className="flex items-center gap-3">
         <SlidersHorizontal size={22} className="text-muted-foreground" />
-        <h1 className="text-2xl font-bold text-foreground">General</h1>
+        <h1 className="text-2xl font-bold text-foreground">Pengaturan</h1>
       </div>
 
-      {/* Horizontal Tabs */}
-      <div className="flex border-b border-border">
-        {TABS.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)}
-            className={cn(
-              'px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px',
-              tab === t.id
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground',
-            )}>
-            {t.label}
-          </button>
-        ))}
-      </div>
+      <div className="flex gap-6 items-start">
+        {/* Sidebar */}
+        <nav className="w-52 shrink-0 rounded-xl border border-border bg-card overflow-hidden">
+          {TABS.map(({ id, label, icon: Icon }, i) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setTab(id)}
+              className={cn(
+                'w-full flex items-center gap-3 px-4 py-3 text-sm text-left transition-colors',
+                i < TABS.length - 1 && 'border-b border-border',
+                tab === id
+                  ? 'bg-primary/10 text-primary font-semibold'
+                  : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground',
+              )}
+            >
+              <Icon size={15} className="shrink-0" />
+              {label}
+            </button>
+          ))}
+        </nav>
 
-      {/* Tab Content */}
-      <div>
-        {tab === 'umum'       && <TabUmum token={token} />}
-        {tab === 'pembayaran' && <TabPembayaran token={token} />}
-        {tab === 'notifikasi' && <TabNotifikasi token={token} />}
-        {tab === 'email'      && <TabEmail token={token} />}
-        {tab === 'cloudinary' && <TabCloudinary token={token} />}
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          {tab === 'umum'       && <TabUmum token={token} />}
+          {tab === 'pembayaran' && <TabPembayaran token={token} />}
+          {tab === 'notifikasi' && <TabNotifikasi token={token} />}
+          {tab === 'email'      && <TabEmail token={token} />}
+          {tab === 'cloudinary' && <TabCloudinary token={token} />}
+        </div>
       </div>
     </div>
   )

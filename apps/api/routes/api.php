@@ -123,9 +123,11 @@ Route::prefix('v1')->group(function () {
 
         Route::get('availability', [AvailabilityController::class, 'index']);
         Route::post('availability', [AvailabilityController::class, 'store']);
-        Route::put('availability/{id}', [AvailabilityController::class, 'update']);
         Route::post('availability/bulk', [AvailabilityController::class, 'bulk']);
         Route::post('availability/block', [AvailabilityController::class, 'block']);
+        Route::post('availability/reset', [AvailabilityController::class, 'reset']);
+        Route::put('availability/{id}', [AvailabilityController::class, 'update']);
+        Route::delete('availability/{id}', [AvailabilityController::class, 'destroy']);
 
         Route::post('settings/general/upload-logo',        [SettingsController::class, 'uploadLogoImage']);
         Route::get('settings/gateways',                    [SettingsController::class, 'gateways']);

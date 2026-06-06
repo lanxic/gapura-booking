@@ -13,13 +13,17 @@ class AvailabilityController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        $perPage = min((int) $request->input('per_page', 50), 500);
+
         $slots = AvailabilitySlot::with('product')
             ->when($request->product_id, fn($q, $id) => $q->where('product_id', $id))
             ->when($request->date,       fn($q, $d)  => $q->whereDate('date', $d))
             ->when($request->from,       fn($q, $f)  => $q->where('date', '>=', $f))
             ->when($request->to,         fn($q, $t)  => $q->where('date', '<=', $t))
             ->orderBy('date')
-            ->paginate(50);
+            ->orderByRaw('ISNULL(time_slot) DESC')
+            ->orderBy('time_slot')
+            ->paginate($perPage);
 
         return response()->json([
             'data' => $slots->items(),
@@ -73,8 +77,7 @@ class AvailabilityController extends Controller
             return response()->json(['message' => $validator->errors()->first()], 422);
         }
 
-        $slots = [];
-        $date  = \Carbon\Carbon::parse($request->from);
+        $date = \Carbon\Carbon::parse($request->from);
         $to    = \Carbon\Carbon::parse($request->to);
 
         while ($date->lte($to)) {
@@ -86,6 +89,47 @@ class AvailabilityController extends Controller
         }
 
         return response()->json(['message' => 'Slot ketersediaan berhasil dibuat/diperbarui.']);
+    }
+
+    public function destroy(int $id): JsonResponse
+    {
+        $slot = AvailabilitySlot::findOrFail($id);
+
+        if ($slot->booked_qty > 0) {
+            return response()->json([
+                'message' => 'Slot ini sudah memiliki booking dan tidak dapat dihapus.',
+            ], 422);
+        }
+
+        $slot->delete();
+
+        return response()->json(['message' => 'Slot berhasil dihapus.']);
+    }
+
+    public function reset(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'product_id' => 'nullable|integer|exists:products,id',
+            'from'       => 'required|date',
+            'to'         => 'required|date|after_or_equal:from',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['message' => $validator->errors()->first()], 422);
+        }
+
+        $query = AvailabilitySlot::whereBetween('date', [$request->from, $request->to])
+            ->when($request->product_id, fn($q, $id) => $q->where('product_id', $id));
+
+        $skipped = (clone $query)->where('booked_qty', '>', 0)->count();
+        $deleted = (clone $query)->where('booked_qty', 0)->delete();
+
+        $message = "{$deleted} slot berhasil direset.";
+        if ($skipped > 0) {
+            $message .= " {$skipped} slot dilewati karena sudah memiliki booking.";
+        }
+
+        return response()->json(['message' => $message]);
     }
 
     public function block(Request $request): JsonResponse
