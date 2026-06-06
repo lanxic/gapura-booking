@@ -48,6 +48,24 @@ class AppServiceProvider extends ServiceProvider
                     ? 'https://api.doku.com'
                     : 'https://api-sandbox.doku.com',
             ]);
+
+            // ── AWS S3 ───────────────────────────────────────────────────────
+            $awsCfg = Cache::remember('storage_aws_config', 300, fn() => SiteSetting::getGroup('storage_aws'));
+
+            config([
+                'filesystems.disks.s3.driver'                  => 's3',
+                'filesystems.disks.s3.key'                     => $awsCfg['access_key_id']     ?? '',
+                'filesystems.disks.s3.secret'                  => $awsCfg['secret_access_key'] ?? '',
+                'filesystems.disks.s3.region'                  => $awsCfg['region']            ?? 'ap-southeast-1',
+                'filesystems.disks.s3.bucket'                  => $awsCfg['bucket']            ?? '',
+                'filesystems.disks.s3.url'                     => $awsCfg['cdn_url'] ?: null,
+                'filesystems.disks.s3.use_path_style_endpoint' => filter_var($awsCfg['use_path_style_endpoint'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            ]);
+
+            // ── Active storage driver ────────────────────────────────────────
+            $storageCfg    = Cache::remember('storage_driver_config', 300, fn() => SiteSetting::getGroup('storage'));
+            $activeStorage = $storageCfg['driver'] ?? 'cloudinary';
+            config(['services.storage.driver' => $activeStorage]);
         } catch (\Throwable) {
             // DB belum tersedia — pakai env defaults
         }

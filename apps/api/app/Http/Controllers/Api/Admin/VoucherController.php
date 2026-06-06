@@ -32,16 +32,14 @@ class VoucherController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'code'             => 'nullable|string|max:50|unique:vouchers,code',
-            'type'             => 'required|in:percent,fixed',
-            'discount_percent' => 'nullable|integer|min:1|max:100',
-            'discount_amount'  => 'nullable|integer|min:1',
-            'max_discount'     => 'nullable|integer|min:1',
-            'min_order'        => 'nullable|integer|min:0',
-            'max_uses'         => 'nullable|integer|min:1',
-            'valid_from'       => 'nullable|date',
-            'valid_until'      => 'nullable|date|after_or_equal:valid_from',
-            'is_active'        => 'boolean',
+            'code'         => 'nullable|string|max:50|unique:vouchers,code',
+            'type'         => 'required|in:percent,fixed',
+            'value'        => 'required|integer|min:1',
+            'min_purchase' => 'nullable|integer|min:0',
+            'quota'        => 'nullable|integer|min:0',
+            'valid_from'   => 'nullable|date',
+            'valid_until'  => 'nullable|date|after_or_equal:valid_from',
+            'is_active'    => 'boolean',
         ]);
 
         if ($validator->fails()) {
@@ -49,7 +47,9 @@ class VoucherController extends Controller
         }
 
         $data = $request->all();
-        $data['code'] = strtoupper($data['code'] ?? Str::random(8));
+        $data['code']         = strtoupper($data['code'] ?? Str::random(8));
+        $data['min_purchase'] = $data['min_purchase'] ?? 0;
+        $data['quota']        = $data['quota']        ?? 0;
 
         $voucher = Voucher::create($data);
 
@@ -64,10 +64,14 @@ class VoucherController extends Controller
     public function update(Request $request, int $id): JsonResponse
     {
         $voucher = Voucher::findOrFail($id);
-        $voucher->update($request->only([
-            'type', 'discount_percent', 'discount_amount', 'max_discount',
-            'min_order', 'max_uses', 'valid_from', 'valid_until', 'is_active',
-        ]));
+        $fields = $request->only([
+            'type', 'value', 'min_purchase', 'quota',
+            'valid_from', 'valid_until', 'is_active',
+        ]);
+        if (array_key_exists('min_purchase', $fields)) $fields['min_purchase'] ??= 0;
+        if (array_key_exists('quota',        $fields)) $fields['quota']        ??= 0;
+
+        $voucher->update($fields);
 
         return response()->json(['data' => $voucher->fresh()]);
     }

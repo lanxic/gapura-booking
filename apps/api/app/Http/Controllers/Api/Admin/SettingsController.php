@@ -487,6 +487,118 @@ class SettingsController extends Controller
         }
     }
 
+    // ── Storage driver ───────────────────────────────────────────────────────
+
+    public function storageDriver(): JsonResponse
+    {
+        $driver = SiteSetting::getCastGroup('storage')['driver'] ?? 'cloudinary';
+        return response()->json(['data' => ['driver' => $driver]]);
+    }
+
+    public function updateStorageDriver(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'driver' => 'required|in:cloudinary,aws',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['message' => $validator->errors()->first()], 422);
+        }
+
+        SiteSetting::setGroupEncoded('storage', ['driver' => $request->driver]);
+        Cache::forget('storage_driver_config');
+
+        return response()->json(['data' => ['saved' => true]]);
+    }
+
+    // ── AWS S3 ───────────────────────────────────────────────────────────────
+
+    public function getAws(): JsonResponse
+    {
+        $cfg = SiteSetting::getCastGroup('storage_aws');
+
+        return response()->json([
+            'data' => [
+                'enabled'                  => filter_var($cfg['enabled'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                'access_key_id'            => '',
+                'secret_access_key'        => '',
+                'region'                   => $cfg['region']  ?? 'ap-southeast-1',
+                'bucket'                   => $cfg['bucket']  ?? '',
+                'cdn_url'                  => $cfg['cdn_url'] ?? '',
+                'use_path_style_endpoint'  => filter_var($cfg['use_path_style_endpoint'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                'access_key_configured'    => ! empty($cfg['access_key_id']),
+                'secret_key_configured'    => ! empty($cfg['secret_access_key']),
+            ],
+        ]);
+    }
+
+    public function updateAws(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'enabled'                 => 'boolean',
+            'access_key_id'           => 'nullable|string|max:255',
+            'secret_access_key'       => 'nullable|string|max:500',
+            'region'                  => 'nullable|string|max:50',
+            'bucket'                  => 'nullable|string|max:255',
+            'cdn_url'                 => 'nullable|string|max:500',
+            'use_path_style_endpoint' => 'boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['message' => $validator->errors()->first()], 422);
+        }
+
+        $payload = $request->only(['enabled', 'region', 'bucket', 'cdn_url', 'use_path_style_endpoint']);
+        if ($request->filled('access_key_id'))     $payload['access_key_id']     = $request->access_key_id;
+        if ($request->filled('secret_access_key')) $payload['secret_access_key'] = $request->secret_access_key;
+
+        SiteSetting::setGroupEncoded('storage_aws', $payload);
+        Cache::forget('storage_aws_config');
+
+        return response()->json(['data' => ['saved' => true]]);
+    }
+
+    public function testAws(): JsonResponse
+    {
+        try {
+            $cfg    = SiteSetting::getGroup('storage_aws');
+            $key    = $cfg['access_key_id']     ?? '';
+            $secret = $cfg['secret_access_key'] ?? '';
+            $region = $cfg['region']            ?? 'ap-southeast-1';
+            $bucket = $cfg['bucket']            ?? '';
+
+            if (empty($key) || empty($secret) || empty($bucket)) {
+                return response()->json(['data' => [
+                    'connected' => false,
+                    'error'     => 'Access Key ID, Secret Access Key, dan Bucket harus diisi.',
+                ]]);
+            }
+
+            // HEAD request ke bucket endpoint — 200/403 artinya bucket bisa dijangkau
+            $url = "https://{$bucket}.s3.{$region}.amazonaws.com/";
+            $ch  = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_TIMEOUT        => 10,
+                CURLOPT_NOBODY         => true,
+            ]);
+            curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            // 200 = public bucket, 403 = private bucket (exists), keduanya berarti endpoint bisa dijangkau
+            $connected = in_array($httpCode, [200, 403]);
+
+            return response()->json(['data' => [
+                'connected' => $connected,
+                'http_code' => $httpCode,
+                'error'     => $connected ? null : 'Bucket tidak ditemukan atau endpoint tidak dapat dijangkau.',
+            ]]);
+        } catch (\Throwable $e) {
+            return response()->json(['data' => ['connected' => false, 'error' => $e->getMessage()]]);
+        }
+    }
+
     // ── Legal ────────────────────────────────────────────────────────────────
 
     public function legal(): JsonResponse

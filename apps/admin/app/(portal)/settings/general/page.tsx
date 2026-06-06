@@ -3,18 +3,18 @@
 import { useAdminAuthStore } from '@/store/auth'
 import { api } from '@/lib/api'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { SlidersHorizontal, Upload, Save, Loader2, CheckCircle, AlertCircle, Eye, EyeOff, Wifi, Send, ChevronDown, X, Globe, CreditCard, Bell, Mail, Cloud } from 'lucide-react'
+import { SlidersHorizontal, Upload, Save, Loader2, CheckCircle, AlertCircle, Eye, EyeOff, Wifi, Send, ChevronDown, X, Globe, CreditCard, Bell, Mail, HardDrive, Cloud, Database } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { cn } from '@/lib/utils'
 
-type Tab = 'umum' | 'pembayaran' | 'notifikasi' | 'email' | 'cloudinary'
+type Tab = 'umum' | 'pembayaran' | 'notifikasi' | 'email' | 'storage'
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: 'umum',       label: 'Umum',        icon: Globe },
   { id: 'pembayaran', label: 'Pembayaran',   icon: CreditCard },
   { id: 'notifikasi', label: 'Notifikasi',   icon: Bell },
   { id: 'email',      label: 'Email',        icon: Mail },
-  { id: 'cloudinary', label: 'Cloudinary',   icon: Cloud },
+  { id: 'storage',    label: 'Storage',      icon: HardDrive },
 ]
 
 const DP_OPTIONS = [30, 50, 70]
@@ -345,24 +345,12 @@ function TabUmum({ token }: { token: string }) {
         <div>
           <label className="block text-sm font-medium text-foreground mb-1">Warna Background Footer</label>
           <p className="text-xs text-muted-foreground mb-3">Warna solid untuk background footer storefront</p>
-          <div className="flex items-center gap-4">
+          <div>
             <ColorPicker
               label="Warna"
               value={form.footer_bg_color}
               onChange={set('footer_bg_color')}
             />
-            {/* Live preview */}
-            <div className="flex-1 mt-5">
-              <div
-                className="h-10 rounded-lg border border-border flex items-center justify-center text-xs font-medium shadow-inner"
-                style={{
-                  background: /^#[0-9a-fA-F]{3,8}$/.test(form.footer_bg_color) ? form.footer_bg_color : '#1a1a2e',
-                  color: 'rgba(255,255,255,0.6)',
-                }}
-              >
-                Preview Footer
-              </div>
-            </div>
           </div>
         </div>
       </SectionCard>
@@ -920,7 +908,7 @@ function TabEmail({ token }: { token: string }) {
   )
 }
 
-// ── Tab: Cloudinary ────────────────────────────────────────────────────────
+// ── Tab: Storage ───────────────────────────────────────────────────────────
 
 function SecretField({ label, hint, configured, value, onChange }: {
   label: string; hint?: string; configured?: boolean; value: string; onChange: (v: string) => void
@@ -955,7 +943,7 @@ function SecretField({ label, hint, configured, value, onChange }: {
   )
 }
 
-function TabCloudinary({ token }: { token: string }) {
+function CloudinarySection({ token }: { token: string }) {
   const queryClient = useQueryClient()
   const [form, setForm] = useState({
     cloud_name: '', api_key: '', api_secret: '', upload_preset: '',
@@ -1097,6 +1085,209 @@ function TabCloudinary({ token }: { token: string }) {
   )
 }
 
+// ── AWS S3 Section ─────────────────────────────────────────────────────────
+
+function AwsSection({ token }: { token: string }) {
+  const queryClient = useQueryClient()
+  const [form, setForm] = useState({
+    enabled: false, access_key_id: '', secret_access_key: '',
+    region: 'ap-southeast-1', bucket: '', cdn_url: '', use_path_style_endpoint: false,
+  })
+  const [configured, setConfigured] = useState({ access_key: false, secret_key: false })
+  const [saved, setSaved]     = useState(false)
+  const [testing, setTesting] = useState(false)
+  const [testResult, setTestResult] = useState<'ok' | 'fail' | null>(null)
+  const [testError,  setTestError]  = useState<string | null>(null)
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['settings-aws'],
+    queryFn:  () => api.get<any>('/admin/settings/aws', { token }),
+    enabled:  !!token,
+  })
+
+  useEffect(() => {
+    if (data?.data) {
+      const d = data.data
+      setForm(prev => ({
+        ...prev,
+        enabled:                 d.enabled                  ?? false,
+        region:                  d.region                   ?? 'ap-southeast-1',
+        bucket:                  d.bucket                   ?? '',
+        cdn_url:                 d.cdn_url                  ?? '',
+        use_path_style_endpoint: d.use_path_style_endpoint  ?? false,
+      }))
+      setConfigured({ access_key: d.access_key_configured, secret_key: d.secret_key_configured })
+    }
+  }, [data])
+
+  const mutation = useMutation({
+    mutationFn: (payload: typeof form) => api.put<any>('/admin/settings/aws', payload, { token }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['settings-aws'] })
+      setSaved(true); setTestResult(null)
+      setTimeout(() => setSaved(false), 3000)
+    },
+  })
+
+  const handleTest = async () => {
+    setTesting(true); setTestResult(null); setTestError(null)
+    try {
+      const res = await api.post<any>('/admin/settings/aws/test', {}, { token })
+      setTestResult(res?.data?.connected ? 'ok' : 'fail')
+      if (!res?.data?.connected) setTestError(res?.data?.error ?? null)
+    } catch { setTestResult('fail') }
+    finally   { setTesting(false) }
+  }
+
+  const set = (key: keyof typeof form) => (v: any) => setForm(prev => ({ ...prev, [key]: v }))
+
+  if (isLoading) return <div className="flex justify-center py-10"><Loader2 className="animate-spin text-muted-foreground" /></div>
+
+  return (
+    <form onSubmit={e => { e.preventDefault(); mutation.mutate(form) }} className="space-y-6">
+      <ToggleRow label="Aktifkan AWS S3" description="Gunakan AWS S3 sebagai storage untuk upload file" checked={form.enabled} onChange={() => set('enabled')(!form.enabled)} />
+
+      <SecretField label="Access Key ID" hint="AWS Access Key ID" configured={configured.access_key} value={form.access_key_id} onChange={set('access_key_id')} />
+      <SecretField label="Secret Access Key" hint="AWS Secret Access Key" configured={configured.secret_key} value={form.secret_access_key} onChange={set('secret_access_key')} />
+
+      <Field label="Region" hint="Region S3 bucket (contoh: ap-southeast-1)">
+        <TextInput value={form.region} onChange={set('region')} placeholder="ap-southeast-1" />
+      </Field>
+
+      <Field label="Bucket" hint="Nama S3 bucket">
+        <TextInput value={form.bucket} onChange={set('bucket')} placeholder="nama-bucket-anda" />
+      </Field>
+
+      <Field label="CDN URL" hint="URL CloudFront atau CDN lainnya (opsional)">
+        <TextInput value={form.cdn_url} onChange={set('cdn_url')} placeholder="https://cdn.example.com" />
+      </Field>
+
+      <ToggleRow
+        label="Path-Style Endpoint"
+        description="Aktifkan untuk MinIO atau S3-compatible storage lokal"
+        checked={form.use_path_style_endpoint}
+        onChange={() => set('use_path_style_endpoint')(!form.use_path_style_endpoint)}
+      />
+
+      <div className="flex items-center gap-3 flex-wrap pt-1">
+        <button type="submit" disabled={mutation.isPending}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors">
+          {mutation.isPending ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+          Simpan
+        </button>
+        <button type="button" onClick={handleTest} disabled={testing}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-border bg-background text-sm font-medium text-foreground hover:bg-accent disabled:opacity-50 transition-colors">
+          {testing ? <Loader2 size={15} className="animate-spin" /> : <Wifi size={15} />}
+          Test Koneksi
+        </button>
+        {saved         && <span className="flex items-center gap-1.5 text-sm text-emerald-600"><CheckCircle size={14} /> Tersimpan</span>}
+        {testResult === 'ok'   && <span className="text-sm text-emerald-600 flex items-center gap-1.5"><CheckCircle size={14} /> Bucket dapat dijangkau</span>}
+        {testResult === 'fail' && <span className="text-sm text-destructive flex items-center gap-1.5"><AlertCircle size={14} /> {testError ?? 'Koneksi gagal'}</span>}
+        {mutation.isError && <span className="text-sm text-destructive"><AlertCircle size={14} className="inline mr-1" />{(mutation.error as Error)?.message}</span>}
+      </div>
+    </form>
+  )
+}
+
+// ── TabStorage (wrapper dengan active-driver selector + sub-tabs) ───────────
+
+type StorageProvider = 'cloudinary' | 'aws'
+
+function TabStorage({ token }: { token: string }) {
+  const queryClient           = useQueryClient()
+  const [provider, setProvider]       = useState<StorageProvider>('cloudinary')
+  const [driver,   setDriver]         = useState<StorageProvider>('cloudinary')
+  const [savingDriver, setSavingDriver] = useState(false)
+  const [driverSaved,  setDriverSaved]  = useState(false)
+
+  const { data: driverData } = useQuery({
+    queryKey: ['settings-storage-driver'],
+    queryFn:  () => api.get<any>('/admin/settings/storage/driver', { token }),
+    enabled:  !!token,
+  })
+
+  useEffect(() => {
+    if (driverData?.data?.driver) {
+      setDriver(driverData.data.driver as StorageProvider)
+    }
+  }, [driverData])
+
+  const handleDriverChange = async (next: StorageProvider) => {
+    setSavingDriver(true)
+    try {
+      await api.put('/admin/settings/storage/driver', { driver: next }, { token })
+      setDriver(next)
+      queryClient.invalidateQueries({ queryKey: ['settings-storage-driver'] })
+      setDriverSaved(true)
+      setTimeout(() => setDriverSaved(false), 2500)
+    } catch {}
+    finally { setSavingDriver(false) }
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Active driver */}
+      <SectionCard title="Storage Aktif">
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">Pilih provider penyimpanan yang digunakan untuk upload file (logo, tiket, gambar produk).</p>
+          <div className="flex gap-3">
+            {([
+              { id: 'cloudinary', label: 'Cloudinary', icon: Cloud },
+              { id: 'aws',        label: 'AWS S3',      icon: Database },
+            ] as { id: StorageProvider; label: string; icon: React.ElementType }[]).map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => handleDriverChange(id)}
+                disabled={savingDriver}
+                className={cn(
+                  'flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium transition-all',
+                  driver === id
+                    ? 'border-primary bg-primary/10 text-primary shadow-sm'
+                    : 'border-border bg-background text-muted-foreground hover:bg-muted/40',
+                )}
+              >
+                <Icon size={15} />
+                {label}
+                {driver === id && <span className="ml-1 text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full">Aktif</span>}
+              </button>
+            ))}
+            {savingDriver && <Loader2 size={16} className="animate-spin text-muted-foreground self-center" />}
+            {driverSaved  && <span className="text-sm text-emerald-600 flex items-center gap-1 self-center"><CheckCircle size={13} /> Tersimpan</span>}
+          </div>
+        </div>
+      </SectionCard>
+
+      {/* Provider sub-tabs */}
+      <div>
+        <div className="flex gap-1 border-b border-border mb-5">
+          {([
+            { id: 'cloudinary', label: 'Cloudinary', icon: Cloud },
+            { id: 'aws',        label: 'AWS S3',      icon: Database },
+          ] as { id: StorageProvider; label: string; icon: React.ElementType }[]).map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setProvider(id)}
+              className={cn(
+                'flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
+                provider === id
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground',
+              )}
+            >
+              <Icon size={14} /> {label}
+            </button>
+          ))}
+        </div>
+
+        {provider === 'cloudinary' && <CloudinarySection token={token} />}
+        {provider === 'aws'        && <AwsSection        token={token} />}
+      </div>
+    </div>
+  )
+}
+
 // ── Page ───────────────────────────────────────────────────────────────────
 
 export default function SettingsGeneralPage() {
@@ -1138,7 +1329,7 @@ export default function SettingsGeneralPage() {
           {tab === 'pembayaran' && <TabPembayaran token={token} />}
           {tab === 'notifikasi' && <TabNotifikasi token={token} />}
           {tab === 'email'      && <TabEmail token={token} />}
-          {tab === 'cloudinary' && <TabCloudinary token={token} />}
+          {tab === 'storage'    && <TabStorage     token={token} />}
         </div>
       </div>
     </div>

@@ -176,9 +176,14 @@ Route::prefix('v1')->group(function () {
         Route::get('settings/email',            [SettingsController::class, 'email']);
         Route::put('settings/email',            [SettingsController::class, 'updateEmail']);
         Route::post('settings/email/test',      [SettingsController::class, 'testEmail']);
-        Route::get('settings/cloudinary',       [SettingsController::class, 'cloudinary']);
-        Route::put('settings/cloudinary',      [SettingsController::class, 'updateCloudinary']);
-        Route::post('settings/cloudinary/test',[SettingsController::class, 'testCloudinary']);
+        Route::get('settings/cloudinary',        [SettingsController::class, 'cloudinary']);
+        Route::put('settings/cloudinary',        [SettingsController::class, 'updateCloudinary']);
+        Route::post('settings/cloudinary/test',  [SettingsController::class, 'testCloudinary']);
+        Route::get('settings/storage/driver',    [SettingsController::class, 'storageDriver']);
+        Route::put('settings/storage/driver',    [SettingsController::class, 'updateStorageDriver']);
+        Route::get('settings/aws',               [SettingsController::class, 'getAws']);
+        Route::put('settings/aws',               [SettingsController::class, 'updateAws']);
+        Route::post('settings/aws/test',         [SettingsController::class, 'testAws']);
 
         Route::apiResource('orders', OrderAdminController::class)->only(['index', 'show', 'update']);
         Route::put('orders/{id}/status', [OrderAdminController::class, 'updateStatus']);
