@@ -6,6 +6,10 @@ import { useQuery } from '@tanstack/react-query'
 import { ClipboardList, Search } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
+import { PageHeader } from '@/components/shared/PageHeader'
+import { TableCard } from '@/components/shared/TableCard'
+import { Pagination } from '@/components/shared/Pagination'
+import { DateRangeFilter, rangeForPreset } from '@/components/shared/DateRangeFilter'
 
 const STATUS_COLORS: Record<string, string> = {
   pending:  'bg-yellow-50 text-yellow-700',
@@ -20,44 +24,52 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 export default function CorrectionsPage() {
-  const token = useAdminAuthStore(s => s.token)
-  const can = useAdminAuthStore(s => s.can)
-  const [search, setSearch] = useState('')
-  const [status, setStatus] = useState('')
-  const [page, setPage] = useState(1)
+  const token    = useAdminAuthStore(s => s.token)
+  const can      = useAdminAuthStore(s => s.can)
+  const [search,    setSearch]    = useState('')
+  const [status,    setStatus]    = useState('')
+  const [page,      setPage]      = useState(1)
+  const [dateRange, setDateRange] = useState(rangeForPreset('this_month'))
 
   const canReview = can('corrections.review')
-  const endpoint = canReview ? '/admin/corrections' : '/corrections/mine'
+  const endpoint  = canReview ? '/admin/corrections' : '/corrections/mine'
+
+  const columns = [
+    'Booking Code',
+    ...(canReview ? ['Diajukan Oleh'] : []),
+    'Alasan',
+    'Status',
+    'Tanggal',
+  ]
 
   const { data, isLoading } = useQuery({
-    queryKey: ['admin-corrections', endpoint, search, status, page],
+    queryKey: ['admin-corrections', endpoint, search, status, dateRange.from, dateRange.to, page],
     queryFn: () =>
       api.get<any>(
-        `${endpoint}?search=${search}&status=${status}&page=${page}`,
+        `${endpoint}?search=${search}&status=${status}&from=${dateRange.from}&to=${dateRange.to}&page=${page}`,
         { token: token! },
       ),
     enabled: !!token,
   })
 
   const corrections = data?.data ?? []
-  const meta = data?.meta ?? {}
+  const meta        = data?.meta ?? {}
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <ClipboardList size={24} className="text-muted-foreground" />
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">
-            {canReview ? 'Koreksi' : 'Permintaan Koreksi Saya'}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {canReview
-              ? 'Tinjau dan kelola permintaan koreksi tiket'
-              : 'Lihat status permintaan koreksi yang Anda ajukan'}
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        icon={ClipboardList}
+        title={canReview ? 'Koreksi' : 'Permintaan Koreksi Saya'}
+        description={
+          canReview
+            ? 'Tinjau dan kelola permintaan koreksi tiket'
+            : 'Lihat status permintaan koreksi yang Anda ajukan'
+        }
+      />
 
+      <DateRangeFilter onChange={range => { setDateRange(range); setPage(1) }} />
+
+      {/* Filters */}
       <div className="flex gap-3 flex-wrap">
         <div className="relative flex-1 min-w-48">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -81,95 +93,51 @@ export default function CorrectionsPage() {
         </select>
       </div>
 
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border bg-muted/30">
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Booking Code</th>
+      <TableCard
+        columns={columns}
+        isLoading={isLoading}
+        isEmpty={corrections.length === 0}
+        emptyMessage="Tidak ada permintaan koreksi."
+      >
+        {corrections.map((item: any) => {
+          const statusVal = item.status?.value ?? item.status ?? 'pending'
+          return (
+            <tr
+              key={item.id}
+              className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors"
+            >
+              <td className="px-4 py-3 font-mono font-medium">
+                {item.order?.booking_code ?? item.booking_code ?? '—'}
+              </td>
               {canReview && (
-                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Diajukan Oleh</th>
-              )}
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Alasan</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Tanggal</th>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <tr key={i} className="border-b border-border">
-                  {Array.from({ length: canReview ? 5 : 4 }).map((_, j) => (
-                    <td key={j} className="px-4 py-3">
-                      <div className="h-4 bg-muted rounded animate-pulse" />
-                    </td>
-                  ))}
-                </tr>
-              ))
-            ) : corrections.length === 0 ? (
-              <tr>
-                <td colSpan={canReview ? 5 : 4} className="px-4 py-8 text-center text-muted-foreground">
-                  Tidak ada permintaan koreksi.
+                <td className="px-4 py-3">
+                  <p className="font-medium text-foreground">{item.requester?.name ?? item.submitted_by ?? '—'}</p>
+                  <p className="text-xs text-muted-foreground">{item.requester?.role ?? ''}</p>
                 </td>
-              </tr>
-            ) : corrections.map((item: any) => {
-              const statusVal = item.status?.value ?? item.status ?? 'pending'
-              return (
-                <tr
-                  key={item.id}
-                  className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors"
-                >
-                  <td className="px-4 py-3 font-mono font-medium">{item.order?.booking_code ?? item.booking_code ?? '—'}</td>
-                  {canReview && (
-                    <td className="px-4 py-3">
-                      <p className="font-medium text-foreground">{item.requester?.name ?? item.submitted_by ?? '—'}</p>
-                      <p className="text-xs text-muted-foreground">{item.requester?.role ?? ''}</p>
-                    </td>
-                  )}
-                  <td className="px-4 py-3 text-muted-foreground max-w-xs truncate">
-                    {item.reason ?? '—'}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={cn(
-                        'px-2 py-0.5 rounded-md text-xs font-medium uppercase tracking-wide',
-                        STATUS_COLORS[statusVal] ?? 'bg-gray-50 text-gray-700',
-                      )}
-                    >
-                      {STATUS_LABELS[statusVal] ?? statusVal}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground text-xs">
-                    {new Date(item.created_at).toLocaleDateString('id-ID')}
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
+              )}
+              <td className="px-4 py-3 text-muted-foreground max-w-xs truncate">
+                {item.reason ?? '—'}
+              </td>
+              <td className="px-4 py-3">
+                <span className={cn('px-2 py-0.5 rounded-md text-xs font-medium uppercase tracking-wide', STATUS_COLORS[statusVal] ?? 'bg-gray-50 text-gray-700')}>
+                  {STATUS_LABELS[statusVal] ?? statusVal}
+                </span>
+              </td>
+              <td className="px-4 py-3 text-muted-foreground text-xs">
+                {new Date(item.created_at).toLocaleDateString('id-ID')}
+              </td>
+            </tr>
+          )
+        })}
+      </TableCard>
 
-      {meta.lastPage > 1 && (
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>Total: {meta.total} koreksi</span>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="px-3 py-1.5 rounded-md border border-border hover:bg-accent disabled:opacity-40 transition-colors"
-            >
-              Sebelumnya
-            </button>
-            <span className="px-3 py-1.5">{page} / {meta.lastPage}</span>
-            <button
-              onClick={() => setPage(p => Math.min(meta.lastPage, p + 1))}
-              disabled={page === meta.lastPage}
-              className="px-3 py-1.5 rounded-md border border-border hover:bg-accent disabled:opacity-40 transition-colors"
-            >
-              Berikutnya
-            </button>
-          </div>
-        </div>
-      )}
+      <Pagination
+        page={page}
+        lastPage={meta.lastPage}
+        total={meta.total}
+        label="koreksi"
+        onChange={setPage}
+      />
     </div>
   )
 }

@@ -6,20 +6,13 @@ import { useQuery } from '@tanstack/react-query'
 import { BarChart2, TrendingUp, ShoppingBag, Banknote } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
-
-function getDefaultRange() {
-  const today = new Date()
-  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1)
-  const fmt = (d: Date) => d.toISOString().slice(0, 10)
-  return { from: fmt(firstDay), to: fmt(today) }
-}
+import { DateRangeFilter, rangeForPreset } from '@/components/shared/DateRangeFilter'
 
 export default function ReportsPage() {
   const token = useAdminAuthStore(s => s.token)
-  const defaults = getDefaultRange()
-  const [from, setFrom] = useState(defaults.from)
-  const [to, setTo] = useState(defaults.to)
-  const [applied, setApplied] = useState(defaults)
+
+  const defaultRange = rangeForPreset('this_month')
+  const [applied, setApplied] = useState(defaultRange)
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-reports-sales', applied.from, applied.to],
@@ -31,8 +24,6 @@ export default function ReportsPage() {
   const summary = data?.summary ?? data?.data ?? {}
   const daily: any[] = data?.daily ?? []
 
-  const handleApply = () => setApplied({ from, to })
-
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -43,35 +34,7 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {/* Date Range Filter */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="flex items-center gap-2">
-          <label className="text-sm text-muted-foreground">Dari</label>
-          <input
-            type="date"
-            value={from}
-            max={to}
-            onChange={e => setFrom(e.target.value)}
-            className="px-3 py-2 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="text-sm text-muted-foreground">Hingga</label>
-          <input
-            type="date"
-            value={to}
-            min={from}
-            onChange={e => setTo(e.target.value)}
-            className="px-3 py-2 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-          />
-        </div>
-        <button
-          onClick={handleApply}
-          className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
-        >
-          Terapkan
-        </button>
-      </div>
+      <DateRangeFilter onChange={setApplied} />
 
       {/* Summary Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

@@ -13,12 +13,15 @@ class UserManagementController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $users = User::when($request->search, fn($q, $s) =>
+        $adminRoles = ['super_admin', 'admin', 'supervisor', 'kasir', 'scanner'];
+
+        $users = User::whereIn('role', $adminRoles)
+            ->when($request->search, fn($q, $s) =>
                 $q->where('name', 'like', "%$s%")->orWhere('email', 'like', "%$s%"))
             ->when($request->role, fn($q, $r) => $q->where('role', $r))
             ->when($request->is_active !== null, fn($q) => $q->where('is_active', $request->boolean('is_active')))
             ->latest()
-            ->paginate(20);
+            ->paginate(10);
 
         return response()->json([
             'data' => $users->items(),

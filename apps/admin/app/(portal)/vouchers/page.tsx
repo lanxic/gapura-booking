@@ -4,6 +4,9 @@ import { useAdminAuthStore } from '@/store/auth'
 import { api } from '@/lib/api'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Percent, Search, Plus, Pencil, Trash2, X, Loader2, RefreshCw } from 'lucide-react'
+import { PageHeader } from '@/components/shared/PageHeader'
+import { TableCard } from '@/components/shared/TableCard'
+import { Pagination } from '@/components/shared/Pagination'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 
@@ -328,24 +331,20 @@ export default function VouchersPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <Percent size={24} className="text-muted-foreground" />
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Voucher</h1>
-            <p className="text-sm text-muted-foreground">Kelola kode diskon dan promo</p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={() => { setModal({ mode: 'create' }); setModalError('') }}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
-        >
-          <Plus size={16} />
-          Tambah Voucher
-        </button>
-      </div>
+      <PageHeader
+        icon={Percent}
+        title="Voucher"
+        description="Kelola kode diskon dan promo"
+        action={
+          <button
+            type="button"
+            onClick={() => { setModal({ mode: 'create' }); setModalError('') }}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
+          >
+            <Plus size={16} /> Tambah Voucher
+          </button>
+        }
+      />
 
       {/* Search */}
       <div className="flex gap-3 flex-wrap">
@@ -361,121 +360,67 @@ export default function VouchersPage() {
         </div>
       </div>
 
-      {/* Table */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border bg-muted/30">
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Kode</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Jenis</th>
-              <th className="text-right px-4 py-3 font-medium text-muted-foreground">Diskon</th>
-              <th className="text-right px-4 py-3 font-medium text-muted-foreground">Penggunaan</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Berlaku Hingga</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
-              <th className="text-right px-4 py-3 font-medium text-muted-foreground">Aksi</th>
+      <TableCard
+        columns={[
+          'Kode', 'Jenis',
+          { label: 'Diskon',     align: 'right' },
+          { label: 'Penggunaan', align: 'right' },
+          'Berlaku Hingga', 'Status',
+          { label: 'Aksi', align: 'right' },
+        ]}
+        isLoading={isLoading}
+        isEmpty={vouchers.length === 0}
+        emptyMessage="Tidak ada voucher. Klik Tambah Voucher untuk membuat yang pertama."
+      >
+        {vouchers.map(voucher => {
+          const isExpired = voucher.valid_until && new Date(voucher.valid_until) < new Date()
+          return (
+            <tr key={voucher.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
+              <td className="px-4 py-3 font-mono font-semibold tracking-wide text-foreground">{voucher.code}</td>
+              <td className="px-4 py-3">
+                <span className={cn('px-2 py-0.5 rounded-md text-xs font-medium',
+                  voucher.type === 'percent' ? 'bg-violet-50 text-violet-700' : 'bg-blue-50 text-blue-700')}>
+                  {voucher.type === 'percent' ? 'Persen' : 'Nominal'}
+                </span>
+              </td>
+              <td className="px-4 py-3 text-right font-medium">{formatDiscount(voucher)}</td>
+              <td className="px-4 py-3 text-right text-muted-foreground">
+                {voucher.used_count}
+                {voucher.quota > 0 && <span className="text-xs"> / {voucher.quota}</span>}
+              </td>
+              <td className="px-4 py-3 text-muted-foreground">
+                {voucher.valid_until ? new Date(voucher.valid_until).toLocaleDateString('id-ID') : '—'}
+              </td>
+              <td className="px-4 py-3">
+                <span className={cn('px-2 py-0.5 rounded-md text-xs font-medium',
+                  !voucher.is_active || isExpired ? 'bg-gray-100 text-gray-500' : 'bg-emerald-50 text-emerald-700')}>
+                  {isExpired ? 'Kadaluarsa' : voucher.is_active ? 'Aktif' : 'Nonaktif'}
+                </span>
+              </td>
+              <td className="px-4 py-3">
+                <div className="flex items-center justify-end gap-1">
+                  <button type="button" onClick={() => { setModal({ mode: 'edit', voucher }); setModalError('') }}
+                    className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors" title="Edit">
+                    <Pencil size={14} />
+                  </button>
+                  <button type="button" onClick={() => setDeleteTarget(voucher)}
+                    className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors" title="Hapus">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {isLoading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <tr key={i} className="border-b border-border">
-                  {Array.from({ length: 7 }).map((_, j) => (
-                    <td key={j} className="px-4 py-3">
-                      <div className="h-4 bg-muted rounded animate-pulse" />
-                    </td>
-                  ))}
-                </tr>
-              ))
-            ) : vouchers.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-muted-foreground">
-                  Tidak ada voucher. Klik <strong>Tambah Voucher</strong> untuk membuat yang pertama.
-                </td>
-              </tr>
-            ) : vouchers.map(voucher => {
-              const isExpired = voucher.valid_until && new Date(voucher.valid_until) < new Date()
-              return (
-                <tr
-                  key={voucher.id}
-                  className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors"
-                >
-                  <td className="px-4 py-3 font-mono font-semibold tracking-wide text-foreground">
-                    {voucher.code}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={cn(
-                      'px-2 py-0.5 rounded-md text-xs font-medium',
-                      voucher.type === 'percent' ? 'bg-violet-50 text-violet-700' : 'bg-blue-50 text-blue-700',
-                    )}>
-                      {voucher.type === 'percent' ? 'Persen' : 'Nominal'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right font-medium">
-                    {formatDiscount(voucher)}
-                  </td>
-                  <td className="px-4 py-3 text-right text-muted-foreground">
-                    {voucher.used_count}
-                    {voucher.quota > 0 ? <span className="text-xs"> / {voucher.quota}</span> : ''}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {voucher.valid_until
-                      ? new Date(voucher.valid_until).toLocaleDateString('id-ID')
-                      : '—'}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={cn(
-                      'px-2 py-0.5 rounded-md text-xs font-medium',
-                      !voucher.is_active || isExpired
-                        ? 'bg-gray-100 text-gray-500'
-                        : 'bg-emerald-50 text-emerald-700',
-                    )}>
-                      {isExpired ? 'Kadaluarsa' : voucher.is_active ? 'Aktif' : 'Nonaktif'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        type="button"
-                        onClick={() => { setModal({ mode: 'edit', voucher }); setModalError('') }}
-                        className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                        title="Edit"
-                      >
-                        <Pencil size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDeleteTarget(voucher)}
-                        className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                        title="Hapus"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
+          )
+        })}
+      </TableCard>
 
-      {/* Pagination */}
-      {meta.lastPage > 1 && (
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>Total: {meta.total} voucher</span>
-          <div className="flex gap-2">
-            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-              className="px-3 py-1.5 rounded-md border border-border hover:bg-accent disabled:opacity-40 transition-colors">
-              Sebelumnya
-            </button>
-            <span className="px-3 py-1.5">{page} / {meta.lastPage}</span>
-            <button onClick={() => setPage(p => Math.min(meta.lastPage, p + 1))} disabled={page === meta.lastPage}
-              className="px-3 py-1.5 rounded-md border border-border hover:bg-accent disabled:opacity-40 transition-colors">
-              Berikutnya
-            </button>
-          </div>
-        </div>
-      )}
+      <Pagination
+        page={page}
+        lastPage={meta.lastPage}
+        total={meta.total}
+        label="voucher"
+        onChange={setPage}
+      />
 
       {/* Create / Edit modal */}
       {modal && (
