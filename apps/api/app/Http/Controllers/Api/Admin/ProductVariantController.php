@@ -13,7 +13,7 @@ class ProductVariantController extends Controller
 {
     public function index(int $productId): JsonResponse
     {
-        $product  = Product::findOrFail($productId);
+        $product  = Product::where('is_deleted', false)->findOrFail($productId);
         $variants = $product->variants()->orderBy('id')->get();
 
         return response()->json(['data' => $variants]);
@@ -21,7 +21,7 @@ class ProductVariantController extends Controller
 
     public function store(Request $request, int $productId): JsonResponse
     {
-        $product   = Product::findOrFail($productId);
+        $product   = Product::where('is_deleted', false)->findOrFail($productId);
         $validator = Validator::make($request->all(), [
             'label'         => 'required|string|max:100',
             'description'   => 'nullable|string',
@@ -51,13 +51,13 @@ class ProductVariantController extends Controller
 
     public function show(int $productId, int $id): JsonResponse
     {
-        $variant = ProductVariant::where('product_id', $productId)->findOrFail($id);
+        $variant = ProductVariant::where('product_id', $productId)->where('is_deleted', false)->findOrFail($id);
         return response()->json(['data' => $variant]);
     }
 
     public function update(Request $request, int $productId, int $id): JsonResponse
     {
-        $variant = ProductVariant::where('product_id', $productId)->findOrFail($id);
+        $variant = ProductVariant::where('product_id', $productId)->where('is_deleted', false)->findOrFail($id);
         $variant->update($request->only([
             'label', 'description', 'price_adult', 'price_child',
             'min_qty', 'max_qty', 'is_active',
@@ -69,8 +69,8 @@ class ProductVariantController extends Controller
 
     public function destroy(int $productId, int $id): JsonResponse
     {
-        $variant = ProductVariant::where('product_id', $productId)->findOrFail($id);
-        $variant->delete();
+        $variant = ProductVariant::where('product_id', $productId)->where('is_deleted', false)->findOrFail($id);
+        $variant->update(['is_deleted' => true]);
 
         return response()->json(['message' => 'Varian dihapus.']);
     }

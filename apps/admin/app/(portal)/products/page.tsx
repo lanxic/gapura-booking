@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { TableCard } from '@/components/shared/TableCard'
 import { Pagination } from '@/components/shared/Pagination'
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 
 export default function ProductsPage() {
   const token       = useAdminAuthStore(s => s.token)
@@ -19,6 +20,7 @@ export default function ProductsPage() {
   const [search,     setSearch]     = useState('')
   const [page,       setPage]       = useState(1)
   const [deletingId, setDeletingId] = useState<number | null>(null)
+  const [confirmTarget, setConfirmTarget] = useState<{ id: number; name: string } | null>(null)
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-products', search, page],
@@ -38,9 +40,15 @@ export default function ProductsPage() {
   const meta     = data?.meta ?? {}
 
   const handleDelete = (id: number, name: string) => {
-    if (!confirm(`Hapus produk "${name}"? Tindakan ini tidak dapat dibatalkan.`)) return
-    setDeletingId(id)
-    deleteMutation.mutate(id)
+    setConfirmTarget({ id, name })
+  }
+
+  const handleConfirmDelete = () => {
+    if (!confirmTarget) return
+    setDeletingId(confirmTarget.id)
+    deleteMutation.mutate(confirmTarget.id, {
+      onSettled: () => setConfirmTarget(null),
+    })
   }
 
   return (
@@ -139,6 +147,15 @@ export default function ProductsPage() {
         total={meta.total}
         label="produk"
         onChange={setPage}
+      />
+
+      <ConfirmDialog
+        open={confirmTarget !== null}
+        title="Hapus Produk"
+        description={`Hapus produk "${confirmTarget?.name}"? Tindakan ini tidak dapat dibatalkan.`}
+        loading={deleteMutation.isPending}
+        onConfirm={handleConfirmDelete}
+        onClose={() => { if (!deleteMutation.isPending) setConfirmTarget(null) }}
       />
     </div>
   )

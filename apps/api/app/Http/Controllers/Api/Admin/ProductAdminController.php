@@ -21,7 +21,7 @@ class ProductAdminController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $products = Product::withTrashed()
+        $products = Product::where('is_deleted', false)
             ->with(['variants', 'addons'])
             ->when($request->search, fn($q, $s) => $q->where('name', 'like', "%$s%"))
             ->when($request->is_active !== null, fn($q) => $q->where('is_active', $request->boolean('is_active')))
@@ -94,13 +94,13 @@ class ProductAdminController extends Controller
 
     public function show(int $id): JsonResponse
     {
-        $product = Product::withTrashed()->with(['variants', 'addons'])->findOrFail($id);
+        $product = Product::with(['variants', 'addons'])->findOrFail($id);
         return response()->json(['data' => $product]);
     }
 
     public function update(Request $request, int $id): JsonResponse
     {
-        $product = Product::findOrFail($id);
+        $product = Product::where('is_deleted', false)->findOrFail($id);
         $product->update($this->productFields($request));
 
         return response()->json(['data' => $product->fresh(['variants', 'addons'])]);
@@ -108,8 +108,8 @@ class ProductAdminController extends Controller
 
     public function destroy(int $id): JsonResponse
     {
-        $product = Product::findOrFail($id);
-        $product->delete();
+        $product = Product::where('is_deleted', false)->findOrFail($id);
+        $product->update(['is_deleted' => true]);
 
         return response()->json(['message' => 'Produk dihapus.']);
     }

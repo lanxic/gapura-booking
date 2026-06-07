@@ -15,6 +15,7 @@ import {
   ProductFormData, emptyProduct,
   Field, Toggle, DynamicList, inputCls, slugify,
 } from '../new/page'
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog'
 
 // ── Variant types ─────────────────────────────────────────────────────────────
 
@@ -184,6 +185,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const [showAdd, setShowAdd]       = useState(false)
   const [addForm, setAddForm]       = useState<VF>({ ...emptyVariantForm })
   const [deletingId, setDeletingId] = useState<number | null>(null)
+  const [confirmVariant, setConfirmVariant] = useState<{ id: number; label: string } | null>(null)
 
   // ── queries ──
 
@@ -481,11 +483,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
                           <Pencil size={14} />
                         </button>
                         <button
-                          onClick={() => {
-                            if (!confirm(`Hapus varian "${v.label}"?`)) return
-                            setDeletingId(v.id)
-                            deleteVariant.mutate(v.id)
-                          }}
+                          onClick={() => setConfirmVariant({ id: v.id, label: v.label })}
                           disabled={deletingId === v.id}
                           title="Hapus"
                           className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 disabled:opacity-40 transition-colors"
@@ -597,6 +595,21 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         </div>
 
       </div>
+
+      <ConfirmDialog
+        open={confirmVariant !== null}
+        title="Hapus Varian"
+        description={`Hapus varian "${confirmVariant?.label}"? Tindakan ini tidak dapat dibatalkan.`}
+        loading={deletingId === confirmVariant?.id}
+        onConfirm={() => {
+          if (!confirmVariant) return
+          setDeletingId(confirmVariant.id)
+          deleteVariant.mutate(confirmVariant.id, {
+            onSettled: () => setConfirmVariant(null),
+          })
+        }}
+        onClose={() => { if (deletingId !== confirmVariant?.id) setConfirmVariant(null) }}
+      />
     </div>
   )
 }

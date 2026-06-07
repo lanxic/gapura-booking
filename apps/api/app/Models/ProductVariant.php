@@ -8,7 +8,7 @@ class ProductVariant extends Model
 {
     protected $fillable = [
         'product_id', 'label', 'description', 'price_adult', 'price_child',
-        'min_qty', 'max_qty', 'is_active',
+        'min_qty', 'max_qty', 'is_active', 'is_deleted',
         'adult_min_age', 'adult_max_age', 'child_min_age', 'child_max_age',
     ];
 
@@ -18,6 +18,7 @@ class ProductVariant extends Model
         'min_qty'       => 'integer',
         'max_qty'       => 'integer',
         'is_active'     => 'boolean',
+        'is_deleted'    => 'boolean',
         'adult_min_age' => 'integer',
         'adult_max_age' => 'integer',
         'child_min_age' => 'integer',

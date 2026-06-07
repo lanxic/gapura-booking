@@ -148,7 +148,7 @@ function KanbanColumn({ statusKey, label, headerCls, dotCls, search, token,
   const total: number  = data?.meta?.total ?? 0
 
   return (
-    <div className="w-[272px] shrink-0 flex flex-col gap-2.5">
+    <div className="w-[272px] shrink-0 flex flex-col h-full gap-2.5">
       {/* Header */}
       <div className={cn(
         'flex items-center justify-between px-3 py-2.5 rounded-xl border transition-all duration-150',
@@ -170,10 +170,9 @@ function KanbanColumn({ statusKey, label, headerCls, dotCls, search, token,
         onDragLeave={onDragLeave}
         onDrop={onDrop}
         className={cn(
-          'flex flex-col gap-2 overflow-y-auto rounded-xl p-1 -m-1 transition-colors duration-150',
+          'flex-1 min-h-0 flex flex-col gap-2 overflow-y-auto rounded-xl p-1 -m-1 transition-colors duration-150',
           isDragOver && 'bg-primary/5 ring-2 ring-inset ring-primary/20',
         )}
-        style={{ maxHeight: 'calc(100dvh - 215px)' }}
       >
         {isLoading
           ? Array.from({ length: 3 }).map((_, i) => (
@@ -254,10 +253,10 @@ export default function OrdersPage() {
 
   return (
     <>
-    <div className="flex flex-col gap-6">
+    <div className="h-full flex flex-col gap-6">
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+      <div className="flex items-start justify-between gap-4 flex-wrap shrink-0">
         <div className="flex items-center gap-3">
           <ShoppingBag size={24} className="text-muted-foreground" />
           <div>
@@ -279,7 +278,7 @@ export default function OrdersPage() {
       </div>
 
       {/* Kanban board */}
-      <div className="flex gap-3 overflow-x-auto pb-4 -mx-1 px-1">
+      <div className="flex-1 min-h-0 flex gap-3 overflow-x-auto pb-4 -mx-1 px-1">
         {COLUMNS.map(col => (
           <KanbanColumn
             key={col.key}

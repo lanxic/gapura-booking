@@ -15,6 +15,7 @@ class ProductController extends Controller
     {
         $products = Product::with(['variants', 'addons'])
             ->where('is_active', true)
+            ->where('is_deleted', false)
             ->orderBy('sort_order')
             ->get();
 
@@ -26,6 +27,7 @@ class ProductController extends Controller
         $product = Product::with(['variants', 'addons'])
             ->where('slug', $slug)
             ->where('is_active', true)
+            ->where('is_deleted', false)
             ->firstOrFail();
 
         return response()->json(['data' => new ProductResource($product)]);
@@ -33,7 +35,7 @@ class ProductController extends Controller
 
     public function availability(Request $request, string $slug): JsonResponse
     {
-        $product = Product::where('slug', $slug)->where('is_active', true)->firstOrFail();
+        $product = Product::where('slug', $slug)->where('is_active', true)->where('is_deleted', false)->firstOrFail();
 
         $from = $request->query('from', now()->toDateString());
         $to   = $request->query('to', now()->addDays(30)->toDateString());

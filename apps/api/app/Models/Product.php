@@ -4,11 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Product extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
 
     protected $fillable = [
         'name', 'slug', 'description',
@@ -18,11 +17,12 @@ class Product extends Model
         'cloudinary_image_id', 'cloudinary_image_url',
         'cloudinary_thumbnail_id', 'cloudinary_thumbnail_url',
         'cloudinary_gallery_ids', 'cloudinary_gallery_urls',
-        'is_active', 'sort_order',
+        'is_active', 'is_deleted', 'sort_order',
     ];
 
     protected $casts = [
         'is_active'               => 'boolean',
+        'is_deleted'              => 'boolean',
         'instant_confirmation'    => 'boolean',
         'highlights'              => 'array',
         'cloudinary_gallery_ids'  => 'array',
@@ -31,7 +31,7 @@ class Product extends Model
 
     public function variants()
     {
-        return $this->hasMany(ProductVariant::class);
+        return $this->hasMany(ProductVariant::class)->where('is_deleted', false);
     }
 
     public function addons()
