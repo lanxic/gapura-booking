@@ -1,13 +1,13 @@
 'use client'
 
 import { useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { CheckCircle, Copy, Mail, MessageCircle, Home } from 'lucide-react'
 import { useState } from 'react'
 
 export default function BookingSuccessPage() {
   const searchParams = useSearchParams()
   const bookingCode = searchParams.get('code') ?? '-'
-  const orderId = searchParams.get('orderId') ?? ''
 
   const [copied, setCopied] = useState(false)
 
@@ -107,21 +107,21 @@ export default function BookingSuccessPage() {
           <MessageCircle className="w-5 h-5" />
           <span>WhatsApp</span>
         </a>
-        <a
+        <Link
           href="/account"
           className="flex flex-col items-center gap-2 p-4 bg-white rounded-xl border border-gray-200 hover:border-emerald-300 transition-colors text-sm text-gray-600 hover:text-emerald-700"
         >
           <Home className="w-5 h-5" />
           <span>Lihat Pesanan</span>
-        </a>
+        </Link>
       </div>
 
-      <a
+      <Link
         href="/"
         className="text-sm text-emerald-600 hover:underline"
       >
         Kembali ke Beranda
-      </a>
+      </Link>
     </div>
   )
 }

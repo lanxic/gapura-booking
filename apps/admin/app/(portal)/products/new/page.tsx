@@ -4,9 +4,10 @@ import { useAdminAuthStore } from '@/store/auth'
 import { api } from '@/lib/api'
 import { useMutation } from '@tanstack/react-query'
 import {
-  Ticket, ChevronLeft, Save, Loader2, Upload, Plus, X,
+  Ticket, ChevronLeft, Save, Loader2, Plus, X,
   Info, MapPin, Star, ImageIcon,
 } from 'lucide-react'
+import { ImageUpload, GalleryUpload } from '@/components/shared/ImageUpload'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
@@ -245,27 +246,42 @@ export default function NewProductPage() {
       title:       'Gambar Produk',
       description: 'Gambar utama, thumbnail, dan galeri untuk halaman produk',
       content: (
-        <div className="space-y-5">
-          <Field label="Gambar Utama">
-            <div className="rounded-lg border border-dashed border-border bg-muted/30 flex flex-col items-center justify-center py-8 gap-2 mb-3 cursor-pointer hover:bg-muted/50 transition-colors">
-              <Upload size={20} className="text-muted-foreground" />
-              <p className="text-xs text-muted-foreground">Klik atau seret gambar ke sini</p>
+        <div className="space-y-6">
+
+          {/* ── Main + Thumbnail row ── */}
+          <div className="grid grid-cols-3 gap-5 items-start">
+            <div className="col-span-2 space-y-1.5">
+              <p className="text-sm font-medium text-foreground">Gambar Utama</p>
+              <p className="text-xs text-muted-foreground">Resolusi disarankan 1920×1080px</p>
+              <ImageUpload
+                value={form.cloudinary_image_url}
+                onChange={set('cloudinary_image_url')}
+                onThumbnail={set('cloudinary_thumbnail_url')}
+                token={token!}
+                aspectRatio="video"
+              />
             </div>
-            <input type="text" value={form.cloudinary_image_url}
-              onChange={e => set('cloudinary_image_url')(e.target.value)}
-              placeholder="https://res.cloudinary.com/..." className={inputCls} />
-          </Field>
 
-          <Field label="Thumbnail">
-            <input type="text" value={form.cloudinary_thumbnail_url}
-              onChange={e => set('cloudinary_thumbnail_url')(e.target.value)}
-              placeholder="https://res.cloudinary.com/..." className={inputCls} />
-          </Field>
+            <div className="space-y-1.5">
+              <p className="text-sm font-medium text-foreground">Thumbnail</p>
+              <p className="text-xs text-muted-foreground">Auto-diisi · 400×300px</p>
+              <ImageUpload
+                value={form.cloudinary_thumbnail_url}
+                onChange={set('cloudinary_thumbnail_url')}
+                token={token!}
+                aspectRatio="4/3"
+              />
+            </div>
+          </div>
 
-          <DynamicList label="Galeri"
-            hint="Gambar-gambar yang ditampilkan di carousel halaman produk"
-            items={form.cloudinary_gallery_urls} onChange={set('cloudinary_gallery_urls')}
-            placeholder="https://res.cloudinary.com/..." />
+          <div className="border-t border-border" />
+
+          {/* ── Gallery ── */}
+          <GalleryUpload
+            items={form.cloudinary_gallery_urls}
+            onChange={set('cloudinary_gallery_urls')}
+            token={token!}
+          />
         </div>
       ),
     },

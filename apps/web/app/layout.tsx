@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { Geist, Geist_Mono } from 'next/font/google'
 import Providers from './providers'
 import './globals.css'
@@ -123,7 +124,7 @@ function SiteLogo({ logoUrl, appName }: { logoUrl?: string | null; appName?: str
   const name = appName || 'Amartha eTicket'
 
   return (
-    <a href="/" className="flex items-center gap-2 select-none min-w-0">
+    <Link href="/" className="flex items-center gap-2 select-none min-w-0">
       {logoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -137,44 +138,34 @@ function SiteLogo({ logoUrl, appName }: { logoUrl?: string | null; appName?: str
           {name}
         </span>
       )}
-    </a>
+    </Link>
   )
 }
 
 // ─── Header right actions ─────────────────────────────────────────────────────
 function HeaderActions() {
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-2 sm:gap-3">
       {/* Currency */}
-      <div className="flex items-center gap-0.5 text-sm font-medium text-gray-700 cursor-pointer select-none hover:text-emerald-700 transition-colors">
+      <button className="hidden sm:flex items-center gap-0.5 text-sm font-medium text-gray-700 cursor-pointer select-none hover:text-emerald-700 transition-colors">
         IDR
         <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
           <path d="M6 9l6 6 6-6" />
         </svg>
-      </div>
+      </button>
 
-      {/* Search */}
-      <a
-        href="/products"
-        className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:text-emerald-700 hover:border-emerald-400 transition-colors"
-        aria-label="Cari produk"
-      >
-        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-          <circle cx="11" cy="11" r="8" />
-          <path d="m21 21-4.35-4.35" />
+      <button className="hidden sm:flex items-center gap-0.5 text-sm font-medium text-gray-700 cursor-pointer select-none hover:text-emerald-700 transition-colors">
+        EN
+        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <path d="M6 9l6 6 6-6" />
         </svg>
-      </a>
+      </button>
 
-      {/* Account */}
       <a
-        href="/account"
-        className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:text-emerald-700 hover:border-emerald-400 transition-colors"
-        aria-label="Akun saya"
+        href="/auth/login"
+        className="rounded-full bg-gray-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-gray-700"
       >
-        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-          <circle cx="12" cy="7" r="4" />
-        </svg>
+        Login
       </a>
     </div>
   )
@@ -208,7 +199,7 @@ function Footer({ s }: { s: GeneralSettings }) {
     <footer style={{ backgroundColor: bgColor }}>
 
       {/* ── Main body ── */}
-      <div className="max-w-5xl mx-auto px-6 pt-14 pb-12">
+      <div className="max-w-6xl mx-auto px-4 pt-14 pb-12">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
 
           {/* ── Brand column ── */}
@@ -284,12 +275,12 @@ function Footer({ s }: { s: GeneralSettings }) {
 
       {/* ── Bottom bar ── */}
       <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: 'rgba(0,0,0,0.20)' }}>
-        <div className="max-w-5xl mx-auto px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-[12px] text-white/30 order-2 sm:order-1">{copyright}</p>
           <nav className="flex items-center gap-5 order-1 sm:order-2">
-            <a href="/" className="text-[12px] text-white/30 hover:text-white/60 transition-colors">Beranda</a>
-            <a href="/products" className="text-[12px] text-white/30 hover:text-white/60 transition-colors">Produk</a>
-            <a href="/account" className="text-[12px] text-white/30 hover:text-white/60 transition-colors">Akun Saya</a>
+            <Link href="/" className="text-[12px] text-white/30 transition-colors hover:text-white/60">Beranda</Link>
+            <Link href="/products" className="text-[12px] text-white/30 transition-colors hover:text-white/60">Produk</Link>
+            <Link href="/account" className="text-[12px] text-white/30 transition-colors hover:text-white/60">Akun Saya</Link>
           </nav>
         </div>
       </div>
@@ -311,7 +302,7 @@ export default async function RootLayout({
         <Providers>
           {/* Header */}
           <header className="bg-white border-b border-gray-100 sticky top-0 z-50 shadow-sm">
-            <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
+            <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
               <SiteLogo logoUrl={settings.logo_url} appName={settings.app_name} />
               <HeaderActions />
             </div>

@@ -19,13 +19,14 @@ type PaymentOption =
 
 type CartState = {
   productSlug: string | null
+  productName: string | null
   selectedDate: string | null
   slotId: string | null
   tickets: TicketSelection[]
   voucher: { code: string; discount: number } | null
   paymentOption: PaymentOption
 
-  setProduct: (slug: string) => void
+  setProduct: (slug: string, name?: string) => void
   setDate: (date: string, slotId: string) => void
   setTicket: (ticket: TicketSelection) => void
   removeTicket: (variantId: string) => void
@@ -44,13 +45,14 @@ export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
       productSlug: null,
+      productName: null,
       selectedDate: null,
       slotId: null,
       tickets: [],
       voucher: null,
       paymentOption: { type: 'full' },
 
-      setProduct: (slug) => set({ productSlug: slug }),
+      setProduct: (slug, name) => set({ productSlug: slug, productName: name ?? null }),
       setDate: (date, slotId) => set({ selectedDate: date, slotId }),
       setTicket: (ticket) =>
         set((s) => {
@@ -69,6 +71,7 @@ export const useCartStore = create<CartState>()(
       clear: () =>
         set({
           productSlug: null,
+          productName: null,
           selectedDate: null,
           slotId: null,
           tickets: [],

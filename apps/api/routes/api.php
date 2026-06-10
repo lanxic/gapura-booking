@@ -63,6 +63,7 @@ Route::prefix('v1')->group(function () {
     Route::get('products/{slug}/availability', [ProductController::class, 'availability']);
     Route::get('payment-options', [SettingsController::class, 'paymentOptions']);
     Route::get('settings/general', [SettingsController::class, 'publicGeneral']);
+    Route::get('settings/hero',    [SettingsController::class, 'publicHero']);
 
     Route::post('orders', [PublicOrderController::class, 'store']);
     Route::post('orders/{bookingCode}/apply-voucher', [PublicOrderController::class, 'applyVoucher']);
@@ -146,6 +147,7 @@ Route::prefix('v1')->group(function () {
 
     // ─── Admin Routes ────────────────────────────────────────────────────────
     Route::prefix('admin')->middleware('auth:admin')->group(function () {
+        Route::post('products/upload-image', [ProductAdminController::class, 'uploadImage']);
         Route::apiResource('products', ProductAdminController::class);
         Route::apiResource('products.variants', 'App\Http\Controllers\Api\Admin\ProductVariantController');
         Route::apiResource('products.addons', 'App\Http\Controllers\Api\Admin\ProductAddonController');
@@ -184,6 +186,9 @@ Route::prefix('v1')->group(function () {
         Route::get('settings/aws',               [SettingsController::class, 'getAws']);
         Route::put('settings/aws',               [SettingsController::class, 'updateAws']);
         Route::post('settings/aws/test',         [SettingsController::class, 'testAws']);
+        Route::get('settings/hero',              [SettingsController::class, 'getHero']);
+        Route::put('settings/hero',              [SettingsController::class, 'updateHero']);
+        Route::post('settings/hero/upload-image',[SettingsController::class, 'uploadHeroImage']);
 
         Route::apiResource('orders', OrderAdminController::class)->only(['index', 'show', 'update']);
         Route::put('orders/{id}/status', [OrderAdminController::class, 'updateStatus']);

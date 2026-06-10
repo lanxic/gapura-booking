@@ -12,16 +12,21 @@ class CorrectionRequestSeeder extends Seeder
         $scanner    = DB::table('users')->where('email', 'scanner@amartha.test')->first();
         $kasir      = DB::table('users')->where('email', 'kasir@amartha.test')->first();
         $supervisor = DB::table('users')->where('email', 'supervisor@amartha.test')->first();
+        $orderDp    = DB::table('orders')->where('booking_code', 'AMT-DP300001')->first();
+        $orderPaid  = DB::table('orders')->where('booking_code', 'AMT-FULL0001')->first();
 
-        $orderDp   = DB::table('orders')->where('booking_code', 'AMT-DP300001')->first();
-        $orderPaid = DB::table('orders')->where('booking_code', 'AMT-FULL0001')->first();
-        $ticket    = DB::table('tickets')
+        if (! $scanner || ! $kasir || ! $supervisor || ! $orderDp || ! $orderPaid) {
+            $this->command->warn('  CorrectionRequestSeeder dilewati — data prerequisite (users/orders) tidak lengkap.');
+            return;
+        }
+
+        $ticket = DB::table('tickets')
             ->join('order_items', 'tickets.order_item_id', '=', 'order_items.id')
             ->where('order_items.order_id', $orderPaid->id)
             ->select('tickets.*')
             ->first();
 
-        $requests = [
+        DB::table('correction_requests')->insert([
             // PENDING — diajukan scanner, belum di-review
             [
                 'requested_by'    => $scanner->id,
@@ -64,9 +69,7 @@ class CorrectionRequestSeeder extends Seeder
                 'review_notes'    => 'Ditolak. Pembatalan order harus melalui admin dengan verifikasi refund policy. Silakan eskalasi ke admin.',
                 'created_at'      => now()->subHours(2),
             ],
-        ];
-
-        DB::table('correction_requests')->insert($requests);
+        ]);
 
         $this->command->info('  Correction requests seeded:');
         $this->command->table(

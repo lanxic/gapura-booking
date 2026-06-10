@@ -3,18 +3,19 @@
 import { useAdminAuthStore } from '@/store/auth'
 import { api } from '@/lib/api'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { SlidersHorizontal, Upload, Save, Loader2, CheckCircle, AlertCircle, Eye, EyeOff, Wifi, Send, ChevronDown, X, Globe, CreditCard, Bell, Mail, HardDrive, Cloud, Database } from 'lucide-react'
+import { SlidersHorizontal, Upload, Save, Loader2, CheckCircle, AlertCircle, Eye, EyeOff, Wifi, Send, ChevronDown, X, Globe, CreditCard, Bell, Mail, HardDrive, Cloud, Database, LayoutTemplate } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { cn } from '@/lib/utils'
 
-type Tab = 'umum' | 'pembayaran' | 'notifikasi' | 'email' | 'storage'
+type Tab = 'umum' | 'pembayaran' | 'notifikasi' | 'email' | 'storage' | 'hero'
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
-  { id: 'umum',       label: 'Umum',        icon: Globe },
-  { id: 'pembayaran', label: 'Pembayaran',   icon: CreditCard },
-  { id: 'notifikasi', label: 'Notifikasi',   icon: Bell },
-  { id: 'email',      label: 'Email',        icon: Mail },
-  { id: 'storage',    label: 'Storage',      icon: HardDrive },
+  { id: 'umum',       label: 'Umum',           icon: Globe },
+  { id: 'pembayaran', label: 'Pembayaran',      icon: CreditCard },
+  { id: 'notifikasi', label: 'Notifikasi',      icon: Bell },
+  { id: 'email',      label: 'Email',           icon: Mail },
+  { id: 'storage',    label: 'Storage',         icon: HardDrive },
+  { id: 'hero',       label: 'Hero Storefront', icon: LayoutTemplate },
 ]
 
 const DP_OPTIONS = [30, 50, 70]
@@ -125,9 +126,9 @@ function ColorPicker({ label, value, onChange }: {
 }
 
 // ── Compact inline upload (logo / favicon) ────────────────────────────────────
-function InlineUpload({ label, hint, urlValue, onUrlChange, uploadEndpoint, token }: {
+function InlineUpload({ label, hint, urlValue, onUrlChange, uploadEndpoint, token, onResponse }: {
   label: string; hint?: string; urlValue: string; onUrlChange: (v: string) => void
-  uploadEndpoint?: string; token?: string
+  uploadEndpoint?: string; token?: string; onResponse?: (data: Record<string, string>) => void
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
@@ -148,8 +149,9 @@ function InlineUpload({ label, hint, urlValue, onUrlChange, uploadEndpoint, toke
         throw new Error(err.message ?? 'Upload gagal')
       }
       const data = await res.json()
-      const url = data?.data?.logo_url ?? data?.data?.url ?? ''
+      const url = data?.data?.logo_url ?? data?.data?.image_url ?? data?.data?.url ?? ''
       if (url) onUrlChange(url)
+      if (onResponse) onResponse(data?.data ?? {})
     } catch (e) {
       setUploadError(e instanceof Error ? e.message : 'Upload gagal')
     } finally { setUploading(false) }
@@ -1288,6 +1290,163 @@ function TabStorage({ token }: { token: string }) {
   )
 }
 
+// ── Tab: Hero Storefront ──────────────────────────────────────────────────
+
+function TabHero({ token }: { token: string }) {
+  const queryClient = useQueryClient()
+  const [form, setForm] = useState({
+    title: '', subtitle: '', image_url: '', image_id: '',
+    cta_label: 'Pesan Tiket Sekarang', cta_url: '#produk',
+    overlay_color: '#000000', overlay_opacity: '0.45',
+  })
+  const [saved, setSaved] = useState(false)
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['settings-hero'],
+    queryFn: () => api.get<any>('/admin/settings/hero', { token }),
+    enabled: !!token,
+  })
+
+  useEffect(() => {
+    if (data?.data) {
+      const d = data.data
+      setForm({
+        title:           d.title           ?? '',
+        subtitle:        d.subtitle        ?? '',
+        image_url:       d.image_url       ?? '',
+        image_id:        d.image_id        ?? '',
+        cta_label:       d.cta_label       ?? 'Pesan Tiket Sekarang',
+        cta_url:         d.cta_url         ?? '#produk',
+        overlay_color:   d.overlay_color   ?? '#000000',
+        overlay_opacity: String(d.overlay_opacity ?? '0.45'),
+      })
+    }
+  }, [data])
+
+  const mutation = useMutation({
+    mutationFn: (payload: typeof form) =>
+      api.put<any>('/admin/settings/hero', payload, { token }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['settings-hero'] })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    },
+  })
+
+  const set = (key: keyof typeof form) => (v: string) => setForm(prev => ({ ...prev, [key]: v }))
+
+  if (isLoading) return <div className="flex justify-center py-10"><Loader2 className="animate-spin text-muted-foreground" /></div>
+
+  const overlayOpacity = parseFloat(form.overlay_opacity) || 0
+
+  return (
+    <form onSubmit={e => { e.preventDefault(); mutation.mutate(form) }} className="space-y-4">
+
+      {/* ── Live Preview ── */}
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="px-5 py-3 border-b border-border bg-muted/30 flex items-center justify-between">
+          <p className="text-sm font-semibold text-foreground">Preview</p>
+          <span className="text-xs text-muted-foreground">Tampilan hero di storefront</span>
+        </div>
+        <div className="relative w-full overflow-hidden bg-gradient-to-br from-emerald-900 to-teal-700" style={{ aspectRatio: '21/6' }}>
+          {form.image_url && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={form.image_url} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          )}
+          <div
+            className="absolute inset-0"
+            style={{ backgroundColor: form.overlay_color, opacity: overlayOpacity }}
+          />
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-6 text-white text-center">
+            {form.title
+              ? <p className="text-xl font-bold drop-shadow-lg">{form.title}</p>
+              : <p className="text-sm text-white/40 italic">Judul belum diisi</p>}
+            {form.subtitle && (
+              <p className="text-sm opacity-80 drop-shadow max-w-md">{form.subtitle}</p>
+            )}
+            {form.cta_label && (
+              <span className="mt-1 px-5 py-2 rounded-lg bg-emerald-500 text-white text-xs font-semibold shadow">
+                {form.cta_label}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Gambar Hero ── */}
+      <SectionCard title="Gambar Latar">
+        <InlineUpload
+          label="Gambar Hero"
+          hint="Resolusi optimal 1920×550px · maks. 5 MB"
+          urlValue={form.image_url}
+          onUrlChange={set('image_url')}
+          uploadEndpoint="/admin/settings/hero/upload-image"
+          token={token}
+          onResponse={d => setForm(prev => ({ ...prev, image_url: d.image_url ?? prev.image_url, image_id: d.image_id ?? prev.image_id }))}
+        />
+      </SectionCard>
+
+      {/* ── Konten Overlay ── */}
+      <SectionCard title="Konten Overlay">
+        <div className="space-y-4">
+          <Field label="Judul" hint="Headline utama yang tampil di tengah hero">
+            <TextInput value={form.title} onChange={set('title')} placeholder="Temukan Pengalaman Wisata Terbaik" />
+          </Field>
+          <Field label="Subjudul">
+            <textarea
+              value={form.subtitle}
+              onChange={e => set('subtitle')(e.target.value)}
+              rows={2}
+              placeholder="Deskripsi singkat yang tampil di bawah judul..."
+              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring transition resize-none"
+            />
+          </Field>
+        </div>
+      </SectionCard>
+
+      {/* ── Tombol CTA ── */}
+      <SectionCard title="Tombol Aksi (CTA)">
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Teks Tombol">
+            <TextInput value={form.cta_label} onChange={set('cta_label')} placeholder="Pesan Tiket Sekarang" />
+          </Field>
+          <Field label="URL Tujuan" hint='Gunakan #produk untuk scroll ke daftar tiket'>
+            <TextInput value={form.cta_url} onChange={set('cta_url')} placeholder="#produk" />
+          </Field>
+        </div>
+      </SectionCard>
+
+      {/* ── Efek Overlay ── */}
+      <SectionCard title="Efek Overlay">
+        <div className="grid grid-cols-2 gap-6 items-start">
+          <ColorPicker label="Warna" value={form.overlay_color} onChange={set('overlay_color')} />
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">
+              Opacity ({Math.round(overlayOpacity * 100)}%)
+            </label>
+            <input
+              type="range" min="0" max="1" step="0.05"
+              value={form.overlay_opacity}
+              onChange={e => set('overlay_opacity')(e.target.value)}
+              className="w-full mt-2 accent-primary cursor-pointer"
+            />
+            <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+              <span>Transparan</span>
+              <span>Gelap penuh</span>
+            </div>
+          </div>
+        </div>
+      </SectionCard>
+
+      <ActionRow
+        pending={mutation.isPending}
+        saved={saved}
+        error={mutation.isError ? (mutation.error as Error)?.message : undefined}
+      />
+    </form>
+  )
+}
+
 // ── Page ───────────────────────────────────────────────────────────────────
 
 export default function SettingsGeneralPage() {
@@ -1330,6 +1489,7 @@ export default function SettingsGeneralPage() {
           {tab === 'notifikasi' && <TabNotifikasi token={token} />}
           {tab === 'email'      && <TabEmail token={token} />}
           {tab === 'storage'    && <TabStorage     token={token} />}
+          {tab === 'hero'       && <TabHero        token={token} />}
         </div>
       </div>
     </div>

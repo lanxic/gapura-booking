@@ -113,4 +113,18 @@ class ProductAdminController extends Controller
 
         return response()->json(['message' => 'Produk dihapus.']);
     }
+
+    public function uploadImage(Request $request): JsonResponse
+    {
+        $request->validate(['file' => 'required|image|max:5120']);
+
+        $folders = $this->cloudinary()->getFolders();
+        $result  = $this->cloudinary()->uploadImage($request->file('file'), $folders['products']);
+
+        return response()->json([
+            'image_url'     => $result['secure_url'],
+            'thumbnail_url' => $result['eager_url'],
+            'public_id'     => $result['public_id'],
+        ]);
+    }
 }

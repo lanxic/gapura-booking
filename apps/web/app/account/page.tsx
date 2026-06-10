@@ -4,7 +4,8 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
-import { cn, formatRupiah, formatDate } from 'ui'
+import { cn, formatRupiah } from 'ui'
+import Link from 'next/link'
 import { useAuthStore } from '@/store/auth'
 import type { ApiResponse, Order } from '@/types'
 import {
@@ -153,19 +154,19 @@ export default function AccountPage() {
             <p className="text-sm text-gray-400 mt-1">
               Yuk, buat pesanan pertamamu!
             </p>
-            <a
+            <Link
               href="/products"
               className="mt-4 inline-block bg-emerald-600 text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-emerald-700 transition-colors"
             >
               Lihat Produk
-            </a>
+            </Link>
           </div>
         )}
 
         {!isLoading && orders.length > 0 && (
           <div className="space-y-3">
             {orders.map((order) => (
-              <a
+              <Link
                 key={order.id}
                 href={`/payment?orderId=${order.id}&code=${order.bookingCode}`}
                 className="block bg-white rounded-2xl border border-gray-100 p-5 hover:border-emerald-200 hover:shadow-sm transition-all"
@@ -201,7 +202,7 @@ export default function AccountPage() {
                   </div>
                   <ChevronRight className="w-5 h-5 text-gray-400" />
                 </div>
-              </a>
+              </Link>
             ))}
           </div>
         )}

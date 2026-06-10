@@ -26,7 +26,7 @@ class OrderController extends Controller
             'items'                  => 'required|array|min:1',
             'items.*.product_id'     => 'required|integer|exists:products,id',
             'items.*.variant_id'     => 'required|integer|exists:product_variants,id',
-            'items.*.availability_slot_id' => 'required|integer|exists:availability_slots,id',
+            'items.*.slot_id' => 'required|integer|exists:availability_slots,id',
             'items.*.qty_adult'      => 'required|integer|min:0',
             'items.*.qty_child'      => 'required|integer|min:0',
             'items.*.addons'         => 'nullable|array',

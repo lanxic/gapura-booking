@@ -14,8 +14,9 @@ function ProductCard({ product }: { product: Product }) {
       : null
 
   return (
-    <a
-      href={`/products/${product.slug}`}
+    <div
+      role="button"
+      tabIndex={0}
       className={cn(
         'group bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden',
         'hover:shadow-md hover:-translate-y-0.5 transition-all duration-200',
@@ -54,7 +55,7 @@ function ProductCard({ product }: { product: Product }) {
           </span>
         </div>
       </div>
-    </a>
+    </div>
   )
 }
 

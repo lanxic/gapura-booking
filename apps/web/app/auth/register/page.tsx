@@ -52,7 +52,7 @@ export default function RegisterPage() {
 
   const registerMutation = useMutation({
     mutationFn: (values: FormValues) =>
-      api.post<RegisterResponse>('/auth/register', {
+      api.postSnake<RegisterResponse>('/auth/register', {
         name: values.name,
         email: values.email,
         phone: values.phone,

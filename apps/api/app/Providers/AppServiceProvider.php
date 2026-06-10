@@ -80,9 +80,9 @@ class AppServiceProvider extends ServiceProvider
                 return;
             }
 
-            $scheme = match ($cfg['encryption'] ?? 'tls') {
-                'ssl'  => 'ssl',
-                'tls'  => 'tls',
+            $scheme = match ($cfg['encryption'] ?? '') {
+                'ssl'  => 'smtps',
+                'tls'  => 'smtp',
                 default => null,
             };
 

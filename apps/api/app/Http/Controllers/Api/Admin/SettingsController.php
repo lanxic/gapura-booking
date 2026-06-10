@@ -599,6 +599,65 @@ class SettingsController extends Controller
         }
     }
 
+    // ── Hero ─────────────────────────────────────────────────────────────────
+
+    /** Public — safe fields only. Used by storefront hero section. */
+    public function publicHero(): JsonResponse
+    {
+        $all = SiteSetting::getCastGroup('hero');
+
+        return response()->json(['data' => [
+            'title'           => $all['title']           ?? '',
+            'subtitle'        => $all['subtitle']        ?? '',
+            'image_url'       => $all['image_url']       ?? '',
+            'cta_label'       => $all['cta_label']       ?? 'Pesan Tiket Sekarang',
+            'cta_url'         => $all['cta_url']         ?? '#produk',
+            'overlay_color'   => $all['overlay_color']   ?? '#000000',
+            'overlay_opacity' => (float) ($all['overlay_opacity'] ?? 0.45),
+        ]]);
+    }
+
+    public function getHero(): JsonResponse
+    {
+        return response()->json(['data' => SiteSetting::getCastGroup('hero')]);
+    }
+
+    public function updateHero(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'title'           => 'nullable|string|max:200',
+            'subtitle'        => 'nullable|string|max:500',
+            'image_url'       => 'nullable|string|max:500',
+            'image_id'        => 'nullable|string|max:255',
+            'cta_label'       => 'nullable|string|max:100',
+            'cta_url'         => 'nullable|string|max:300',
+            'overlay_color'   => 'nullable|string|max:20',
+            'overlay_opacity' => 'nullable|numeric|min:0|max:1',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['message' => $validator->errors()->first()], 422);
+        }
+
+        SiteSetting::setGroupEncoded('hero', $request->only([
+            'title', 'subtitle', 'image_url', 'image_id', 'cta_label', 'cta_url', 'overlay_color', 'overlay_opacity',
+        ]));
+
+        return response()->json(['data' => SiteSetting::getCastGroup('hero')]);
+    }
+
+    public function uploadHeroImage(Request $request): JsonResponse
+    {
+        $request->validate(['file' => 'required|image|max:5120']);
+
+        $result = $this->cloudinary->uploadImage($request->file('file'), 'amartha/hero');
+
+        return response()->json(['data' => [
+            'image_url' => $result['secure_url'],
+            'image_id'  => $result['public_id'],
+        ]]);
+    }
+
     // ── Legal ────────────────────────────────────────────────────────────────
 
     public function legal(): JsonResponse
