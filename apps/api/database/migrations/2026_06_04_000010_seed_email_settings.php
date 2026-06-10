@@ -10,14 +10,14 @@ return new class extends Migration
         $now = now();
 
         DB::table('site_settings')->insert([
-            ['group' => 'email', 'key' => 'mailer',       'value' => 'smtp',                           'created_at' => $now, 'updated_at' => $now],
-            ['group' => 'email', 'key' => 'host',         'value' => env('MAIL_HOST', 'smtp.resend.com'), 'created_at' => $now, 'updated_at' => $now],
-            ['group' => 'email', 'key' => 'port',         'value' => (string) env('MAIL_PORT', 465),   'created_at' => $now, 'updated_at' => $now],
-            ['group' => 'email', 'key' => 'username',     'value' => env('MAIL_USERNAME', 'resend'),   'created_at' => $now, 'updated_at' => $now],
-            ['group' => 'email', 'key' => 'password',     'value' => env('MAIL_PASSWORD', ''),         'created_at' => $now, 'updated_at' => $now],
-            ['group' => 'email', 'key' => 'encryption',   'value' => 'ssl',                            'created_at' => $now, 'updated_at' => $now],
-            ['group' => 'email', 'key' => 'from_address', 'value' => env('MAIL_FROM_ADDRESS', 'noreply@amartha-eticket.com'), 'created_at' => $now, 'updated_at' => $now],
-            ['group' => 'email', 'key' => 'from_name',    'value' => env('MAIL_FROM_NAME', 'Amartha eTicket'), 'created_at' => $now, 'updated_at' => $now],
+            ['group' => 'email', 'key' => 'mailer',       'value' => 'smtp',                    'created_at' => $now, 'updated_at' => $now],
+            ['group' => 'email', 'key' => 'host',         'value' => 'localhost',               'created_at' => $now, 'updated_at' => $now],
+            ['group' => 'email', 'key' => 'port',         'value' => '1025',                    'created_at' => $now, 'updated_at' => $now],
+            ['group' => 'email', 'key' => 'username',     'value' => '',                        'created_at' => $now, 'updated_at' => $now],
+            ['group' => 'email', 'key' => 'password',     'value' => '',                        'created_at' => $now, 'updated_at' => $now],
+            ['group' => 'email', 'key' => 'encryption',   'value' => '',                        'created_at' => $now, 'updated_at' => $now],
+            ['group' => 'email', 'key' => 'from_address', 'value' => 'noreply@amartha-eticket.com', 'created_at' => $now, 'updated_at' => $now],
+            ['group' => 'email', 'key' => 'from_name',    'value' => 'Amartha eTicket',         'created_at' => $now, 'updated_at' => $now],
         ]);
     }
 

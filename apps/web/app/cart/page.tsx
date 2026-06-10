@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { formatRupiah } from 'ui'
 import { useCartStore } from '@/store/cart'
 import { Trash2 } from 'lucide-react'
@@ -16,9 +17,9 @@ export default function CartPage() {
     return (
       <div className="max-w-4xl mx-auto px-4 py-20 text-center text-gray-500">
         <p className="text-lg font-medium">Keranjang kamu kosong.</p>
-        <a href="/products" className="text-emerald-600 hover:underline text-sm mt-2 inline-block">
+        <Link href="/products" className="text-emerald-600 hover:underline text-sm mt-2 inline-block">
           Lihat produk wisata
-        </a>
+        </Link>
       </div>
     )
   }
@@ -33,9 +34,9 @@ export default function CartPage() {
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Keranjang Saya</h1>
-        <a href="/" className="text-sm text-gray-500 border border-gray-300 px-4 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">
+        <Link href="/" className="text-sm text-gray-500 border border-gray-300 px-4 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">
           Kembali Ke Beranda
-        </a>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

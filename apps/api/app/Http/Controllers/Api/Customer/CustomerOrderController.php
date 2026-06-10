@@ -52,7 +52,7 @@ class CustomerOrderController extends Controller
         $validator = Validator::make($request->all(), [
             'items'                        => 'required|array|min:1',
             'items.*.order_item_id'        => 'required|integer',
-            'items.*.availability_slot_id' => 'required|integer|exists:availability_slots,id',
+            'items.*.slot_id' => 'required|integer|exists:availability_slots,id',
         ]);
 
         if ($validator->fails()) {
@@ -62,9 +62,9 @@ class CustomerOrderController extends Controller
         foreach ($request->items as $item) {
             $orderItem = $order->items()->find($item['order_item_id']);
             if ($orderItem) {
-                $slot = AvailabilitySlot::find($item['availability_slot_id']);
+                $slot = AvailabilitySlot::find($item['slot_id']);
                 if ($slot && ! $slot->is_blocked && $slot->booked_qty < $slot->total_quota) {
-                    $orderItem->update(['availability_slot_id' => $item['availability_slot_id']]);
+                    $orderItem->update(['slot_id' => $item['slot_id']]);
                 }
             }
         }

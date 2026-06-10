@@ -23,8 +23,26 @@ export const api = {
     request<T>(path, { ...opts, method: 'GET' }),
   post: <T>(path: string, body: unknown, opts?: RequestOptions) =>
     request<T>(path, { ...opts, method: 'POST', body: JSON.stringify(body) }),
+  // Convert object keys to snake_case and POST
+  postSnake: <T>(path: string, body: unknown, opts?: RequestOptions) =>
+    request<T>(path, { ...opts, method: 'POST', body: JSON.stringify(toSnake(body)) }),
   put: <T>(path: string, body: unknown, opts?: RequestOptions) =>
     request<T>(path, { ...opts, method: 'PUT', body: JSON.stringify(body) }),
   delete: <T>(path: string, opts?: RequestOptions) =>
     request<T>(path, { ...opts, method: 'DELETE' }),
+}
+
+function toSnake(value: unknown): unknown {
+  if (value === null || value === undefined) return value
+  if (Array.isArray(value)) return value.map((v) => toSnake(v))
+  if (typeof value === 'object' && value !== null) {
+    const obj = value as Record<string, unknown>
+    const out: Record<string, unknown> = {}
+    for (const key of Object.keys(obj)) {
+      const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase()
+      out[snakeKey] = toSnake(obj[key])
+    }
+    return out
+  }
+  return value
 }

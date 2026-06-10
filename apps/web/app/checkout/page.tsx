@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -42,6 +43,11 @@ const schema = z.object({
   country: z.string().min(1, 'Pilih negara'),
   agreeTerms: z.literal(true, { errorMap: () => ({ message: 'Anda harus menyetujui syarat & ketentuan' }) }),
   voucherCode: z.string().optional(),
+  bookingForOther: z.boolean().optional(),
+  guestTitle: z.string().optional(),
+  guestName: z.string().optional(),
+  guestCountryCode: z.string().optional(),
+  guestPhone: z.string().optional(),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -57,7 +63,7 @@ export default function CheckoutPage() {
   const {
     register,
     handleSubmit,
-    watch,
+    setValue,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -65,17 +71,32 @@ export default function CheckoutPage() {
       customerName: auth.user?.name ?? '',
       customerEmail: auth.user?.email ?? '',
       countryCode: '+62',
+      guestCountryCode: '+62',
       country: 'Indonesia',
       agreeTerms: undefined,
+      bookingForOther: false,
     },
   })
+
+  // local UI state to avoid using `watch()` from react-hook-form (prevents incompatible-library warning)
+  const [bookingForOtherLocal, setBookingForOtherLocal] = useState<boolean>(false)
+  const [countryCodeLocal, setCountryCodeLocal] = useState<string>('+62')
+  const [guestCountryCodeLocal, setGuestCountryCodeLocal] = useState<string>('+62')
+
+  useEffect(() => {
+    // initialize from form defaults
+    setValue('countryCode', countryCodeLocal)
+    setValue('bookingForOther', bookingForOtherLocal)
+    setValue('guestCountryCode', guestCountryCodeLocal)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const total = cart.total()
   const discount = cart.voucher?.discount ?? 0
 
   const applyVoucher = useMutation({
     mutationFn: (code: string) =>
-      api.post<ApiResponse<{ discount: number }>>('/vouchers/validate', { code }),
+      api.postSnake<ApiResponse<{ discount: number }>>('/vouchers/validate', { code }),
     onSuccess: (res) => {
       cart.setVoucher(voucherInput, res.data.discount)
       setVoucherMsg({ ok: true, text: `Voucher berhasil! Diskon ${formatRupiah(res.data.discount)}` })
@@ -88,7 +109,7 @@ export default function CheckoutPage() {
 
   const createOrder = useMutation({
     mutationFn: (payload: object) =>
-      api.post<ApiResponse<Order>>('/orders', payload, {
+      api.postSnake<ApiResponse<Order>>('/orders', payload, {
         token: auth.token ?? undefined,
       }),
     onSuccess: (res) => {
@@ -102,18 +123,18 @@ export default function CheckoutPage() {
     if (cart.tickets.length === 0) return
 
     const payload = {
-      productSlug: cart.productSlug,
-      slotId: cart.slotId,
+      product_slug: cart.productSlug,
+      slot_id: cart.slotId,
       date: cart.selectedDate,
-      customerName: values.customerName,
-      customerEmail: values.customerEmail,
-      customerPhone: `${values.countryCode}${values.customerPhone}`,
-      paymentType: 'full',
-      voucherCode: cart.voucher?.code ?? undefined,
+      customer_name: values.customerName,
+      customer_email: values.customerEmail,
+      customer_phone: `${values.countryCode}${values.customerPhone}`,
+      payment_type: 'full',
+      voucher_code: cart.voucher?.code ?? undefined,
       items: cart.tickets.map((t) => ({
-        variantId: t.variantId,
-        qtyAdult: t.qtyAdult,
-        qtyChild: t.qtyChild,
+        variant_id: t.variantId,
+        qty_adult: t.qtyAdult,
+        qty_child: t.qtyChild,
         addons: t.addons,
       })),
     }
@@ -138,13 +159,53 @@ export default function CheckoutPage() {
       })
     : null
 
+  const totalAdults = cart.tickets.reduce((s, t) => s + (t.qtyAdult ?? 0), 0)
+  const totalChildren = cart.tickets.reduce((s, t) => s + (t.qtyChild ?? 0), 0)
+ 
+
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Checkout</h1>
-        <a href="/" className="text-sm text-gray-500 border border-gray-300 px-4 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">
+        <Link href="/" className="text-sm text-gray-500 border border-gray-300 px-4 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">
           Kembali Ke Beranda
-        </a>
+        </Link>
+      </div>
+
+      {/* Top summary bar (compact) */}
+      <div className="mb-6">
+        <div className="bg-white border border-gray-200 rounded-2xl p-3 flex flex-col md:flex-row items-center gap-3 md:gap-4">
+          <div className="flex-1 min-w-0 flex items-center gap-3">
+            <div className="text-[11px] text-gray-400 uppercase tracking-wider">Check In</div>
+            <div className="font-medium text-gray-800">{visitDate ?? 'Pilih tanggal'}</div>
+          </div>
+
+          <div className="flex-1 min-w-0 flex items-center gap-3">
+            <div className="text-[11px] text-gray-400 uppercase tracking-wider">Tamu</div>
+            <div className="font-medium text-gray-800">{totalAdults} Adult, {totalChildren} Children</div>
+          </div>
+
+          <div className="flex-1 min-w-0 flex items-center gap-3">
+            <div className="text-[11px] text-gray-400 uppercase tracking-wider">Promo Code</div>
+            <input
+              type="text"
+              value={voucherInput}
+              onChange={e => setVoucherInput(e.target.value.toUpperCase())}
+              placeholder="Kode Promo"
+              className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+          </div>
+
+          <div className="flex-none">
+            <button
+              type="button"
+              onClick={() => { if (voucherInput) applyVoucher.mutate(voucherInput) }}
+              className="px-4 py-2 bg-emerald-800 text-white rounded-lg font-medium hover:bg-emerald-900 transition-colors"
+            >
+              Update
+            </button>
+          </div>
+        </div>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)}>
@@ -203,7 +264,8 @@ export default function CheckoutPage() {
                 <div className="flex gap-2">
                   <div className="relative">
                     <select
-                      {...register('countryCode')}
+                      value={countryCodeLocal}
+                      onChange={e => { setCountryCodeLocal(e.target.value); setValue('countryCode', e.target.value) }}
                       className="h-full pl-8 pr-2 py-3 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white appearance-none"
                     >
                       {COUNTRY_CODES.map(c => (
@@ -211,7 +273,7 @@ export default function CheckoutPage() {
                       ))}
                     </select>
                     <span className="absolute left-2 top-1/2 -translate-y-1/2 text-base pointer-events-none">
-                      {COUNTRY_CODES.find(c => c.code === watch('countryCode'))?.flag ?? '🇮🇩'}
+                      {COUNTRY_CODES.find(c => c.code === countryCodeLocal)?.flag ?? '🇮🇩'}
                     </span>
                   </div>
                   <input
@@ -267,12 +329,82 @@ export default function CheckoutPage() {
                   <p className="text-xs text-red-500 mt-1">{errors.agreeTerms.message}</p>
                 )}
               </div>
+
+              {/* Booking for another person toggle */}
+              <div>
+                <label className="flex items-center gap-3">
+                  <input
+                    checked={bookingForOtherLocal}
+                    onChange={e => { setBookingForOtherLocal(e.target.checked); setValue('bookingForOther', e.target.checked) }}
+                    type="checkbox"
+                    className="w-5 h-5 rounded border-gray-300 accent-emerald-600 focus:ring-emerald-500"
+                  />
+                  <span className="text-sm font-medium text-emerald-700">I am booking for another person</span>
+                </label>
+              </div>
+
+              {/* Guest info - shown when bookingForOther is checked */}
+              {/** using local state for UI visibility instead of watch() **/}
+              {bookingForOtherLocal && (
+                <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4 p-4 border border-gray-200 rounded-lg bg-white">
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Title</label>
+                    <select
+                      {...register('guestTitle')}
+                      className="w-full px-4 py-3 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+                    >
+                      <option value="Mr">Mr.</option>
+                      <option value="Mrs">Mrs.</option>
+                      <option value="Ms">Ms.</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Guest Full Name *</label>
+                    <input
+                      {...register('guestName')}
+                      type="text"
+                      placeholder="Enter Guest full name"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Country Code</label>
+                    <div className="relative">
+                      <select
+                        {...register('guestCountryCode')}
+                        value={guestCountryCodeLocal}
+                        onChange={e => { setGuestCountryCodeLocal(e.target.value); setValue('guestCountryCode', e.target.value) }}
+                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white appearance-none"
+                      >
+                        {COUNTRY_CODES.map(c => (
+                          <option key={c.code} value={c.code}>{c.code}</option>
+                        ))}
+                      </select>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-base pointer-events-none">
+                        {COUNTRY_CODES.find(c => c.code === guestCountryCodeLocal)?.flag ?? '🇮🇩'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Guest Mobile number *</label>
+                    <input
+                      {...register('guestPhone')}
+                      type="tel"
+                      placeholder="Enter Your Mobile Phone"
+                      className="w-full px-4 py-3 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Right: Cart summary */}
           <div className="lg:col-span-1">
-            <div className="bg-white border border-gray-200 rounded-xl p-5 sticky top-20 space-y-4">
+            <div className="bg-white border border-gray-200 rounded-xl p-5 sticky top-20 space-y-4 overflow-visible">
               <div className="flex items-center justify-between">
                 <h2 className="font-semibold text-gray-800">
                   Keranjang Saya ({cart.tickets.length})
@@ -301,21 +433,21 @@ export default function CheckoutPage() {
               ))}
 
               {/* Promo code */}
-              <div>
+              <div className="relative">
                 <p className="text-sm font-semibold text-gray-700 mb-2">Masukkan Kode Promo</p>
-                <div className="flex gap-2">
+                <div className="relative">
                   <input
                     type="text"
                     value={voucherInput}
                     onChange={e => setVoucherInput(e.target.value.toUpperCase())}
                     placeholder="Kode Promo"
-                    className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full pr-28 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                   <button
                     type="button"
                     onClick={() => { if (voucherInput) applyVoucher.mutate(voucherInput) }}
                     disabled={applyVoucher.isPending || !voucherInput}
-                    className="px-3 py-2 bg-emerald-700 text-white rounded-lg text-sm font-medium hover:bg-emerald-800 disabled:opacity-60 transition-colors"
+                    className="absolute right-[-12px] top-1/2 -translate-y-1/2 bg-emerald-700 text-white rounded-full px-4 py-2 text-sm font-medium hover:bg-emerald-800 disabled:opacity-60 shadow-md transition-colors"
                   >
                     {applyVoucher.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Terapkan'}
                   </button>

@@ -41,7 +41,7 @@ export default function LoginPage() {
 
   const login = useMutation({
     mutationFn: (values: FormValues) =>
-      api.post<LoginResponse>('/auth/login', values),
+      api.postSnake<LoginResponse>('/auth/login', values),
     onSuccess: (res) => {
       auth.setAuth(res.data.user, res.data.token)
       router.push(redirect)

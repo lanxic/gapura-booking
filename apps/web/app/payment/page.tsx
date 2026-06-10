@@ -1,6 +1,7 @@
 'use client'
 
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
@@ -61,7 +62,6 @@ function statusColor(status: string): string {
 
 export default function PaymentPage() {
   const searchParams = useSearchParams()
-  const router = useRouter()
   const auth = useAuthStore()
 
   const orderId = searchParams.get('order_id') ?? searchParams.get('orderId') ?? ''
@@ -92,8 +92,10 @@ export default function PaymentPage() {
       order?.status === 'refunded' ||
       order?.status === 'expired'
     ) {
-      setPollingEnabled(false)
+      const t = setTimeout(() => setPollingEnabled(false), 0)
+      return () => clearTimeout(t)
     }
+    return undefined
   }, [order?.status])
 
   if (isLoading) {
@@ -113,9 +115,9 @@ export default function PaymentPage() {
         {bookingCode && (
           <p className="text-sm mt-1">Kode booking: <strong>{bookingCode}</strong></p>
         )}
-        <a href="/" className="text-emerald-600 hover:underline text-sm mt-3 inline-block">
+        <Link href="/" className="text-emerald-600 hover:underline text-sm mt-3 inline-block">
           Kembali ke Beranda
-        </a>
+        </Link>
       </div>
     )
   }
@@ -300,18 +302,18 @@ export default function PaymentPage() {
           )}
           Refresh Status
         </button>
-        <a
+        <Link
           href="/account"
           className="w-full py-2.5 text-center border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
         >
           Lihat Semua Pesanan
-        </a>
-        <a
+        </Link>
+        <Link
           href="/"
           className="text-center text-sm text-emerald-600 hover:underline"
         >
           Kembali ke Beranda
-        </a>
+        </Link>
       </div>
     </div>
   )
