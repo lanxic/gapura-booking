@@ -4,12 +4,15 @@ namespace App\Http\Controllers\Api\Auth;
 
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
-use App\Models\Order;
+use App\Mail\VerifyEmailMail;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
@@ -39,12 +42,18 @@ class AuthController extends Controller
             return response()->json(['message' => 'Akun tidak aktif.'], 403);
         }
 
+        // Blokir customer yang belum verifikasi email
+        if ($user->role === UserRole::Customer && is_null($user->email_verified_at)) {
+            return response()->json([
+                'message' => 'Email belum diverifikasi. Silakan cek kotak masuk email Anda.',
+                'code'    => 'EMAIL_NOT_VERIFIED',
+            ], 403);
+        }
+
         $ttl = (int) env($user->role->jwtTtlEnvKey(), 480);
 
         JWTAuth::factory()->setTTL($ttl);
         $token = auth('api')->login($user);
-
-        $this->linkGuestOrders($user);
 
         return $this->respondWithToken($token, $user);
     }
@@ -54,19 +63,9 @@ class AuthController extends Controller
         return $this->loginWithRole($request, [UserRole::SuperAdmin, UserRole::Admin]);
     }
 
-    public function loginSupervisor(Request $request): JsonResponse
-    {
-        return $this->loginWithRole($request, [UserRole::Supervisor]);
-    }
-
     public function loginScanner(Request $request): JsonResponse
     {
         return $this->loginWithRole($request, [UserRole::Scanner]);
-    }
-
-    public function loginKasir(Request $request): JsonResponse
-    {
-        return $this->loginWithRole($request, [UserRole::Kasir]);
     }
 
     public function loginCustomer(Request $request): JsonResponse
@@ -79,28 +78,97 @@ class AuthController extends Controller
         $validator = Validator::make($request->all(), [
             'name'                  => 'required|string|max:255',
             'email'                 => 'required|email|unique:users',
+            'phone'                 => 'nullable|string|max:20',
             'password'              => 'required|string|min:8|confirmed',
+            'password_confirmation' => 'required|string',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['message' => $validator->errors()->first()], 422);
         }
 
+        $token = Str::random(64);
+
         $user = User::create([
-            'name'      => $request->name,
-            'email'     => $request->email,
-            'password'  => $request->password,
-            'role'      => UserRole::Customer,
-            'is_active' => true,
+            'name'                       => $request->name,
+            'email'                      => $request->email,
+            'phone'                      => $request->phone,
+            'password'                   => $request->password,
+            'role'                       => UserRole::Customer,
+            'is_active'                  => true,
+            'email_verification_token'   => $token,
+            'email_verified_at'          => null,
         ]);
 
-        $ttl = (int) env('JWT_CUSTOMER_TTL', 10080);
-        JWTAuth::factory()->setTTL($ttl);
-        $token = auth('api')->login($user);
+        $verifyUrl = url("/v1/auth/customer/verify/{$token}");
 
-        $this->linkGuestOrders($user);
+        Mail::to($user->email)->send(new VerifyEmailMail($user->name, $verifyUrl));
 
-        return $this->respondWithToken($token, $user, 201);
+        return response()->json([
+            'message' => 'Pendaftaran berhasil. Silakan cek email Anda untuk verifikasi akun.',
+        ], 201);
+    }
+
+    /**
+     * GET /auth/customer/verify/{token}
+     * Dipanggil saat user klik link di email.
+     */
+    public function verifyEmail(string $token): RedirectResponse
+    {
+        $frontendUrl = rtrim(env('FRONTEND_URL', 'http://localhost:3000'), '/');
+
+        $user = User::where('email_verification_token', $token)
+            ->where('role', UserRole::Customer)
+            ->first();
+
+        if (! $user) {
+            return redirect("{$frontendUrl}/auth/login?verified=invalid");
+        }
+
+        if (! is_null($user->email_verified_at)) {
+            return redirect("{$frontendUrl}/auth/login?verified=already");
+        }
+
+        $user->update([
+            'email_verified_at'        => now(),
+            'email_verification_token' => null,
+        ]);
+
+        return redirect("{$frontendUrl}/auth/login?verified=1");
+    }
+
+    /**
+     * POST /auth/customer/resend-verification
+     * Kirim ulang email verifikasi.
+     */
+    public function resendVerification(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['message' => $validator->errors()->first()], 422);
+        }
+
+        $user = User::where('email', $request->email)
+            ->where('role', UserRole::Customer)
+            ->first();
+
+        // Selalu kembalikan response sukses untuk mencegah email enumeration
+        if (! $user || ! is_null($user->email_verified_at)) {
+            return response()->json(['message' => 'Jika email terdaftar dan belum terverifikasi, link baru telah dikirim.']);
+        }
+
+        $token = Str::random(64);
+
+        $user->update(['email_verification_token' => $token]);
+
+        $verifyUrl = url("/v1/auth/customer/verify/{$token}");
+
+        Mail::to($user->email)->send(new VerifyEmailMail($user->name, $verifyUrl));
+
+        return response()->json(['message' => 'Jika email terdaftar dan belum terverifikasi, link baru telah dikirim.']);
     }
 
     public function refresh(): JsonResponse
@@ -120,13 +188,6 @@ class AuthController extends Controller
     public function me(): JsonResponse
     {
         return response()->json(['data' => $this->userPayload(auth('api')->user())]);
-    }
-
-    private function linkGuestOrders(User $user): void
-    {
-        Order::where('customer_email', $user->email)
-            ->whereNull('user_id')
-            ->update(['user_id' => $user->id]);
     }
 
     private function respondWithToken(string $token, User $user, int $status = 200): JsonResponse

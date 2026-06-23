@@ -5,10 +5,11 @@ import { clearSession } from '@/lib/session'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
-  LayoutDashboard, Ticket, CalendarDays, ShoppingBag, Percent,
-  BarChart2, ClipboardList, Users, Settings, History,
+  LayoutDashboard, Percent, Users, Settings, History,
   LogOut, Menu, Loader2, ChevronsUpDown, UserCircle,
-  ChevronLeft, ChevronRight, ChevronDown, SlidersHorizontal, Scale,
+  ChevronLeft, ChevronRight, ChevronDown, Ticket,
+  MapPin, BookOpen, CreditCard, Tag, Globe, Scale,
+  Users2, FileText,
 } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { cn } from '@/lib/utils'
@@ -31,48 +32,37 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    label: 'Operations',
+    label: 'Activity Booking',
     items: [
-      { href: '/products',     label: 'Products',     icon: Ticket,       permissions: ['products.manage'] },
-      { href: '/availability', label: 'Availability', icon: CalendarDays,  permissions: ['availability.manage'] },
-      { href: '/orders',       label: 'Orders',       icon: ShoppingBag,   permissions: ['orders.view', 'orders.manage'] },
+      { href: '/activities', label: 'Aktivitas',    icon: MapPin,    permissions: ['activities.manage'] },
+      { href: '/bookings',   label: 'Bookings',     icon: BookOpen,  permissions: ['bookings.view'] },
+      { href: '/invoices',   label: 'Invoice',      icon: FileText,  permissions: ['bookings.view'] },
+      { href: '/customers',  label: 'Pelanggan',    icon: Users2,    permissions: ['bookings.view'] },
+      { href: '/offers',     label: 'Offer & Promo', icon: Tag,      permissions: ['offers.manage'] },
     ],
   },
   {
-    label: 'Finance',
+    label: 'Pengaturan',
     items: [
-      { href: '/vouchers', label: 'Vouchers', icon: Percent,   permissions: ['vouchers.manage'] },
-      { href: '/reports',  label: 'Reports',  icon: BarChart2, permissions: ['reports.view', 'reports.export'] },
-    ],
-  },
-  {
-    label: 'Corrections',
-    items: [
-      { href: '/corrections', label: 'Corrections', icon: ClipboardList, permissions: ['corrections.submit', 'corrections.review'] },
-    ],
-  },
-  {
-    label: 'Settings',
-    items: [
-      { href: '/users',         label: 'Users',          icon: Users,    permissions: ['users.manage'] },
+      { href: '/users', label: 'Users', icon: Users, permissions: ['users.manage'] },
       {
         label: 'Settings', icon: Settings, permissions: ['settings.manage'],
         children: [
-          { href: '/settings/general', label: 'General', icon: SlidersHorizontal },
-          { href: '/settings/legal',   label: 'Legal',   icon: Scale },
+          { href: '/settings/general',          label: 'General',          icon: Globe },
+          { href: '/settings/payment-gateways', label: 'Metode Pembayaran', icon: CreditCard },
+          { href: '/settings/payment-plans',    label: 'Payment Plans',    icon: Percent },
+          { href: '/settings/legal',            label: 'Legal',            icon: Scale },
         ],
       },
-      { href: '/activity-logs', label: 'Activity Logs', icon: History,  permissions: ['activity_logs.view', 'activity_logs.export'] },
+      { href: '/activity-logs', label: 'Activity Logs', icon: History, permissions: ['activity_logs.view'] },
     ],
   },
 ]
 
 const ROLE_LABELS: Record<AdminRole, string> = {
   super_admin: 'Super Admin',
-  admin: 'Admin',
-  supervisor: 'Supervisor',
-  kasir: 'Cashier',
-  scanner: 'Scanner',
+  admin:       'Admin',
+  scanner:     'Scanner',
 }
 
 function NavLink({ href, label, icon: Icon, pathname, onClick, isCollapsed, indent }: {

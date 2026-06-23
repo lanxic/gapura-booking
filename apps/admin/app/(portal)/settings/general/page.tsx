@@ -3,11 +3,11 @@
 import { useAdminAuthStore } from '@/store/auth'
 import { api } from '@/lib/api'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { SlidersHorizontal, Upload, Save, Loader2, CheckCircle, AlertCircle, Eye, EyeOff, Wifi, Send, ChevronDown, X, Globe, CreditCard, Bell, Mail, HardDrive, Cloud, Database, LayoutTemplate } from 'lucide-react'
+import { SlidersHorizontal, Upload, Save, Loader2, CheckCircle, AlertCircle, Eye, EyeOff, Wifi, Send, ChevronDown, X, Globe, Bell, Mail, HardDrive, Cloud, Database, LayoutTemplate } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { cn } from '@/lib/utils'
 
-type Tab = 'umum' | 'pembayaran' | 'notifikasi' | 'email' | 'storage' | 'hero'
+type Tab = 'umum' | 'notifikasi' | 'email' | 'storage' | 'hero'
 
 type NavChild = { id: Tab; label: string; icon: React.ElementType }
 type NavItem =
@@ -16,7 +16,6 @@ type NavItem =
 
 const NAV: NavItem[] = [
   { kind: 'item',  id: 'umum',       label: 'Umum',          icon: Globe },
-  { kind: 'item',  id: 'pembayaran', label: 'Pembayaran',    icon: CreditCard },
   { kind: 'item',  id: 'notifikasi', label: 'Notifikasi',    icon: Bell },
   { kind: 'item',  id: 'email',      label: 'Email',         icon: Mail },
   { kind: 'item',  id: 'storage',    label: 'Storage',       icon: HardDrive },
@@ -24,8 +23,6 @@ const NAV: NavItem[] = [
     { id: 'hero', label: 'Hero', icon: LayoutTemplate },
   ]},
 ]
-
-const DP_OPTIONS = [30, 50, 70]
 
 // ── Shared helpers ─────────────────────────────────────────────────────────
 
@@ -386,290 +383,6 @@ function TabUmum({ token }: { token: string }) {
         error={mutation.isError ? (mutation.error as Error)?.message : undefined}
       />
     </form>
-  )
-}
-
-// ── Tab: Pembayaran ────────────────────────────────────────────────────────
-
-type GatewayData = {
-  midtrans: { enabled: boolean; environment: string; server_key: string; client_key: string; server_key_configured: boolean; client_key_configured: boolean; snap_url: string }
-  doku:     { enabled: boolean; environment: string; mall_id: string; client_id: string; secret_key: string; secret_key_configured: boolean }
-  cash:     { enabled: boolean }
-}
-
-function GatewayCard({ title, logo, enabled, onToggleEnabled, children, onSave, onTest, saving, testing, saved, testResult, testError }: {
-  title: string; logo: string; enabled: boolean; onToggleEnabled: () => void
-  children: React.ReactNode
-  onSave: () => void; onTest: () => void
-  saving: boolean; testing: boolean; saved: boolean
-  testResult: 'ok' | 'fail' | null; testError: string
-}) {
-  const [open, setOpen] = useState(enabled)
-
-  return (
-    <div className="rounded-xl border border-border bg-card overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4">
-        <div className="flex items-center gap-3">
-          <button type="button" onClick={() => setOpen(v => !v)}
-            className="flex items-center gap-2 text-sm font-semibold text-foreground hover:text-primary transition-colors">
-            <ChevronDown size={16} className={cn('transition-transform', open && 'rotate-180')} />
-            {logo} {title}
-          </button>
-          {enabled && <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700">Aktif</span>}
-        </div>
-        <ToggleRow label="" checked={enabled} onChange={onToggleEnabled} />
-      </div>
-
-      {/* Body */}
-      {open && (
-        <div className="border-t border-border px-5 py-5 space-y-5">
-          {children}
-          <div className="flex items-center gap-3 flex-wrap pt-1">
-            <button type="button" onClick={onSave} disabled={saving}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors">
-              {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-              Simpan
-            </button>
-            <button type="button" onClick={onTest} disabled={testing}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm font-medium hover:bg-accent disabled:opacity-50 transition-colors">
-              {testing ? <Loader2 size={14} className="animate-spin" /> : <Wifi size={14} />}
-              Test Koneksi
-            </button>
-            {saved          && <span className="flex items-center gap-1 text-sm text-emerald-600"><CheckCircle size={13} /> Tersimpan</span>}
-            {testResult === 'ok'   && <span className="flex items-center gap-1 text-sm text-emerald-600"><CheckCircle size={13} /> Koneksi berhasil</span>}
-            {testResult === 'fail' && <span className="flex items-center gap-1 text-sm text-destructive"><AlertCircle size={13} /> {testError || 'Koneksi gagal'}</span>}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function TabPembayaran({ token }: { token: string }) {
-  const queryClient = useQueryClient()
-
-  // Payment method form (full/DP)
-  const [methodForm, setMethodForm] = useState({ full_payment: true, down_payment: false, dp_percentages: [] as number[] })
-  const [methodSaved, setMethodSaved] = useState(false)
-
-  // Midtrans
-  const [midtrans, setMidtrans] = useState({ enabled: true, environment: 'sandbox', server_key: '', client_key: '' })
-  const [midtransConf, setMidtransConf] = useState({ server_key: false, client_key: false })
-  const [midtransSaving, setMidtransSaving]   = useState(false)
-  const [midtransTesting, setMidtransTesting] = useState(false)
-  const [midtransSaved, setMidtransSaved]     = useState(false)
-  const [midtransTest, setMidtransTest]       = useState<'ok'|'fail'|null>(null)
-  const [midtransTestErr, setMidtransTestErr] = useState('')
-
-  // Doku
-  const [doku, setDoku] = useState({ enabled: false, environment: 'sandbox', mall_id: '', client_id: '', secret_key: '' })
-  const [dokuConf, setDokuConf]       = useState({ secret_key: false })
-  const [dokuSaving, setDokuSaving]   = useState(false)
-  const [dokuTesting, setDokuTesting] = useState(false)
-  const [dokuSaved, setDokuSaved]     = useState(false)
-  const [dokuTest, setDokuTest]       = useState<'ok'|'fail'|null>(null)
-  const [dokuTestErr, setDokuTestErr] = useState('')
-
-  // Cash
-  const [cashEnabled, setCashEnabled] = useState(true)
-  const [cashSaved, setCashSaved]     = useState(false)
-
-  // Fetch all data
-  const { data: methodData, isLoading: methodLoading } = useQuery({
-    queryKey: ['settings-payment'],
-    queryFn: () => api.get<any>('/admin/settings/payment-options', { token }),
-    enabled: !!token,
-  })
-  const { data: gwData, isLoading: gwLoading } = useQuery({
-    queryKey: ['settings-gateways'],
-    queryFn: () => api.get<any>('/admin/settings/gateways', { token }),
-    enabled: !!token,
-  })
-
-  useEffect(() => {
-    if (methodData?.data) {
-      const d = methodData.data
-      setMethodForm({ full_payment: d.full_payment ?? true, down_payment: d.down_payment ?? false, dp_percentages: d.dp_percentages ?? [] })
-    }
-  }, [methodData])
-
-  useEffect(() => {
-    if (gwData?.data) {
-      const { midtrans: m, doku: d, cash: c } = gwData.data as GatewayData
-      setMidtrans({ enabled: m.enabled, environment: m.environment, server_key: '', client_key: '' })
-      setMidtransConf({ server_key: m.server_key_configured, client_key: m.client_key_configured })
-      setDoku({ enabled: d.enabled, environment: d.environment, mall_id: d.mall_id, client_id: d.client_id, secret_key: '' })
-      setDokuConf({ secret_key: d.secret_key_configured })
-      setCashEnabled(c.enabled)
-    }
-  }, [gwData])
-
-  const methodMutation = useMutation({
-    mutationFn: (p: typeof methodForm) => api.put<any>('/admin/settings/payment-options', p, { token }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['settings-payment'] }); setMethodSaved(true); setTimeout(() => setMethodSaved(false), 3000) },
-  })
-
-  const toggleDp = (pct: number) => setMethodForm(prev => ({
-    ...prev,
-    dp_percentages: prev.dp_percentages.includes(pct)
-      ? prev.dp_percentages.filter(p => p !== pct)
-      : [...prev.dp_percentages, pct].sort((a, b) => a - b),
-  }))
-
-  const saveMidtrans = async () => {
-    setMidtransSaving(true)
-    try {
-      await api.put('/admin/settings/gateways/midtrans', midtrans, { token })
-      queryClient.invalidateQueries({ queryKey: ['settings-gateways'] })
-      setMidtransSaved(true); setTimeout(() => setMidtransSaved(false), 3000)
-    } finally { setMidtransSaving(false) }
-  }
-
-  const testMidtrans = async () => {
-    setMidtransTesting(true); setMidtransTest(null); setMidtransTestErr('')
-    try {
-      const r = await api.post<any>('/admin/settings/gateways/midtrans/test', {}, { token })
-      setMidtransTest(r?.data?.connected ? 'ok' : 'fail')
-      setMidtransTestErr(r?.data?.error ?? '')
-    } catch (e) { setMidtransTest('fail'); setMidtransTestErr(e instanceof Error ? e.message : 'Error') }
-    finally { setMidtransTesting(false) }
-  }
-
-  const saveDoku = async () => {
-    setDokuSaving(true)
-    try {
-      await api.put('/admin/settings/gateways/doku', doku, { token })
-      queryClient.invalidateQueries({ queryKey: ['settings-gateways'] })
-      setDokuSaved(true); setTimeout(() => setDokuSaved(false), 3000)
-    } finally { setDokuSaving(false) }
-  }
-
-  const testDoku = async () => {
-    setDokuTesting(true); setDokuTest(null); setDokuTestErr('')
-    try {
-      const r = await api.post<any>('/admin/settings/gateways/doku/test', {}, { token })
-      setDokuTest(r?.data?.connected ? 'ok' : 'fail')
-      setDokuTestErr(r?.data?.error ?? '')
-    } catch (e) { setDokuTest('fail'); setDokuTestErr(e instanceof Error ? e.message : 'Error') }
-    finally { setDokuTesting(false) }
-  }
-
-  const saveCash = async (enabled: boolean) => {
-    await api.put('/admin/settings/gateways/cash', { enabled }, { token })
-    setCashSaved(true); setTimeout(() => setCashSaved(false), 3000)
-  }
-
-  if (methodLoading || gwLoading) return <div className="flex justify-center py-10"><Loader2 className="animate-spin text-muted-foreground" /></div>
-
-  return (
-    <div className="space-y-8">
-      {/* Metode Pembayaran */}
-      <div>
-        <p className="text-sm font-semibold text-foreground mb-4">Metode Pembayaran</p>
-        <div className="space-y-4">
-          <ToggleRow label="Bayar Penuh" description="Pelanggan membayar total tagihan sekaligus" checked={methodForm.full_payment} onChange={() => setMethodForm(p => ({ ...p, full_payment: !p.full_payment }))} />
-          <div className="h-px bg-border" />
-          <ToggleRow label="Uang Muka (DP)" description="Pelanggan dapat membayar sebagian terlebih dahulu" checked={methodForm.down_payment} onChange={() => setMethodForm(p => ({ ...p, down_payment: !p.down_payment }))} />
-          {methodForm.down_payment && (
-            <div className="ml-4 pl-4 border-l-2 border-emerald-200 space-y-2">
-              <p className="text-sm font-medium text-foreground">Persentase DP yang diizinkan</p>
-              <div className="flex gap-4">
-                {DP_OPTIONS.map(pct => (
-                  <label key={pct} className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={methodForm.dp_percentages.includes(pct)} onChange={() => toggleDp(pct)}
-                      className="h-4 w-4 rounded border-input accent-emerald-600" />
-                    <span className="text-sm">{pct}%</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-        <div className="flex items-center gap-3 mt-5">
-          <button type="button" onClick={() => methodMutation.mutate(methodForm)} disabled={methodMutation.isPending}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors">
-            {methodMutation.isPending ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
-            Simpan
-          </button>
-          {methodSaved && <span className="flex items-center gap-1.5 text-sm text-emerald-600"><CheckCircle size={14} /> Tersimpan</span>}
-        </div>
-      </div>
-
-      {/* Gateway Pembayaran */}
-      <div>
-        <p className="text-sm font-semibold text-foreground mb-4">Konfigurasi Gateway</p>
-        <div className="space-y-4">
-
-          {/* Midtrans */}
-          <GatewayCard
-            title="Midtrans" logo="💳"
-            enabled={midtrans.enabled}
-            onToggleEnabled={() => setMidtrans(p => ({ ...p, enabled: !p.enabled }))}
-            onSave={saveMidtrans} onTest={testMidtrans}
-            saving={midtransSaving} testing={midtransTesting}
-            saved={midtransSaved} testResult={midtransTest} testError={midtransTestErr}
-          >
-            <Field label="Environment">
-              <SelectInput value={midtrans.environment} onChange={v => setMidtrans(p => ({ ...p, environment: v }))} options={[
-                { value: 'sandbox',    label: 'Sandbox (Testing)' },
-                { value: 'production', label: 'Production' },
-              ]} />
-            </Field>
-            <SecretField label="Server Key" hint="Midtrans Server Key dari dashboard"
-              configured={midtransConf.server_key} value={midtrans.server_key}
-              onChange={v => setMidtrans(p => ({ ...p, server_key: v }))} />
-            <SecretField label="Client Key" hint="Midtrans Client Key (digunakan di frontend)"
-              configured={midtransConf.client_key} value={midtrans.client_key}
-              onChange={v => setMidtrans(p => ({ ...p, client_key: v }))} />
-          </GatewayCard>
-
-          {/* Doku */}
-          <GatewayCard
-            title="Doku" logo="🏦"
-            enabled={doku.enabled}
-            onToggleEnabled={() => setDoku(p => ({ ...p, enabled: !p.enabled }))}
-            onSave={saveDoku} onTest={testDoku}
-            saving={dokuSaving} testing={dokuTesting}
-            saved={dokuSaved} testResult={dokuTest} testError={dokuTestErr}
-          >
-            <Field label="Environment">
-              <SelectInput value={doku.environment} onChange={v => setDoku(p => ({ ...p, environment: v }))} options={[
-                { value: 'sandbox',    label: 'Sandbox (Testing)' },
-                { value: 'production', label: 'Production' },
-              ]} />
-            </Field>
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Mall ID" hint="DOKU Mall ID">
-                <TextInput value={doku.mall_id} onChange={v => setDoku(p => ({ ...p, mall_id: v }))} placeholder="mall_id" />
-              </Field>
-              <Field label="Client ID" hint="DOKU Client ID">
-                <TextInput value={doku.client_id} onChange={v => setDoku(p => ({ ...p, client_id: v }))} placeholder="client_id" />
-              </Field>
-            </div>
-            <SecretField label="Secret Key" hint="DOKU Secret Key dari dashboard"
-              configured={dokuConf.secret_key} value={doku.secret_key}
-              onChange={v => setDoku(p => ({ ...p, secret_key: v }))} />
-          </GatewayCard>
-
-          {/* Tunai */}
-          <div className="rounded-xl border border-border bg-card px-5 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span>💵</span>
-              <div>
-                <p className="text-sm font-semibold text-foreground">Tunai</p>
-                <p className="text-xs text-muted-foreground">Pembayaran tunai di lokasi melalui kasir</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              {cashSaved && <span className="text-xs text-emerald-600 flex items-center gap-1"><CheckCircle size={12} /> Tersimpan</span>}
-              <ToggleRow label="" checked={cashEnabled} onChange={() => { const next = !cashEnabled; setCashEnabled(next); saveCash(next) }} />
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </div>
   )
 }
 
@@ -1201,37 +914,32 @@ function AwsSection({ token }: { token: string }) {
 
 // ── TabStorage (wrapper dengan active-driver selector + sub-tabs) ───────────
 
-type StorageProvider = 'cloudinary' | 'aws'
+type StorageDriver = 'cloudinary' | 'aws_s3'
 
 function TabStorage({ token }: { token: string }) {
-  const queryClient           = useQueryClient()
-  const [provider, setProvider]       = useState<StorageProvider>('cloudinary')
-  const [driver,   setDriver]         = useState<StorageProvider>('cloudinary')
-  const [savingDriver, setSavingDriver] = useState(false)
-  const [driverSaved,  setDriverSaved]  = useState(false)
+  const queryClient             = useQueryClient()
+  const [provider, setProvider] = useState<StorageDriver>('cloudinary')
+  const [activating, setActivating] = useState(false)
+  const [activateDone, setActivateDone] = useState(false)
 
-  const { data: driverData } = useQuery({
-    queryKey: ['settings-storage-driver'],
-    queryFn:  () => api.get<any>('/admin/settings/storage/driver', { token }),
+  const { data: storageData } = useQuery({
+    queryKey: ['settings-storage'],
+    queryFn:  () => api.get<any>('/admin/settings/storage', { token }),
     enabled:  !!token,
   })
 
-  useEffect(() => {
-    if (driverData?.data?.driver) {
-      setDriver(driverData.data.driver as StorageProvider)
-    }
-  }, [driverData])
+  const providers: any[] = storageData?.data ?? []
+  const activeDriver: StorageDriver = (providers.find((p: any) => p.is_active)?.name ?? 'cloudinary') as StorageDriver
 
-  const handleDriverChange = async (next: StorageProvider) => {
-    setSavingDriver(true)
+  const handleDriverChange = async (next: StorageDriver) => {
+    setActivating(true)
     try {
-      await api.put('/admin/settings/storage/driver', { driver: next }, { token })
-      setDriver(next)
-      queryClient.invalidateQueries({ queryKey: ['settings-storage-driver'] })
-      setDriverSaved(true)
-      setTimeout(() => setDriverSaved(false), 2500)
+      await api.post(`/admin/settings/storage/${next}/activate`, {}, { token })
+      queryClient.invalidateQueries({ queryKey: ['settings-storage'] })
+      setActivateDone(true)
+      setTimeout(() => setActivateDone(false), 2500)
     } catch {}
-    finally { setSavingDriver(false) }
+    finally { setActivating(false) }
   }
 
   return (
@@ -1243,27 +951,27 @@ function TabStorage({ token }: { token: string }) {
           <div className="flex gap-3">
             {([
               { id: 'cloudinary', label: 'Cloudinary', icon: Cloud },
-              { id: 'aws',        label: 'AWS S3',      icon: Database },
-            ] as { id: StorageProvider; label: string; icon: React.ElementType }[]).map(({ id, label, icon: Icon }) => (
+              { id: 'aws_s3',     label: 'AWS S3',      icon: Database },
+            ] as { id: StorageDriver; label: string; icon: React.ElementType }[]).map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
                 type="button"
                 onClick={() => handleDriverChange(id)}
-                disabled={savingDriver}
+                disabled={activating}
                 className={cn(
                   'flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium transition-all',
-                  driver === id
+                  activeDriver === id
                     ? 'border-primary bg-primary/10 text-primary shadow-sm'
                     : 'border-border bg-background text-muted-foreground hover:bg-muted/40',
                 )}
               >
                 <Icon size={15} />
                 {label}
-                {driver === id && <span className="ml-1 text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full">Aktif</span>}
+                {activeDriver === id && <span className="ml-1 text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full">Aktif</span>}
               </button>
             ))}
-            {savingDriver && <Loader2 size={16} className="animate-spin text-muted-foreground self-center" />}
-            {driverSaved  && <span className="text-sm text-emerald-600 flex items-center gap-1 self-center"><CheckCircle size={13} /> Tersimpan</span>}
+            {activating    && <Loader2 size={16} className="animate-spin text-muted-foreground self-center" />}
+            {activateDone  && <span className="text-sm text-emerald-600 flex items-center gap-1 self-center"><CheckCircle size={13} /> Tersimpan</span>}
           </div>
         </div>
       </SectionCard>
@@ -1273,8 +981,8 @@ function TabStorage({ token }: { token: string }) {
         <div className="flex gap-1 border-b border-border mb-5">
           {([
             { id: 'cloudinary', label: 'Cloudinary', icon: Cloud },
-            { id: 'aws',        label: 'AWS S3',      icon: Database },
-          ] as { id: StorageProvider; label: string; icon: React.ElementType }[]).map(({ id, label, icon: Icon }) => (
+            { id: 'aws_s3',     label: 'AWS S3',      icon: Database },
+          ] as { id: StorageDriver; label: string; icon: React.ElementType }[]).map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               type="button"
@@ -1292,7 +1000,7 @@ function TabStorage({ token }: { token: string }) {
         </div>
 
         {provider === 'cloudinary' && <CloudinarySection token={token} />}
-        {provider === 'aws'        && <AwsSection        token={token} />}
+        {provider === 'aws_s3'     && <AwsSection        token={token} />}
       </div>
     </div>
   )
@@ -1524,7 +1232,6 @@ export default function SettingsGeneralPage() {
         {/* Content */}
         <div className="flex-1 min-w-0">
           {tab === 'umum'       && <TabUmum token={token} />}
-          {tab === 'pembayaran' && <TabPembayaran token={token} />}
           {tab === 'notifikasi' && <TabNotifikasi token={token} />}
           {tab === 'email'      && <TabEmail token={token} />}
           {tab === 'storage'    && <TabStorage     token={token} />}

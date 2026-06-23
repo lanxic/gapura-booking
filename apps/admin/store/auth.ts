@@ -1,25 +1,18 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-export type AdminRole = 'super_admin' | 'admin' | 'supervisor' | 'kasir' | 'scanner'
+export type AdminRole = 'super_admin' | 'admin' | 'scanner'
 
 export type Permission =
-  | 'products.manage'
-  | 'availability.manage'
-  | 'orders.view'
-  | 'orders.manage'
-  | 'vouchers.manage'
-  | 'reports.view'
-  | 'reports.export'
+  | 'activities.manage'
+  | 'bookings.view'
+  | 'bookings.manage'
+  | 'offers.manage'
   | 'users.manage'
-  | 'corrections.submit'
-  | 'corrections.review'
   | 'activity_logs.view'
   | 'activity_logs.export'
   | 'settings.manage'
   | 'scanner.scan'
-  | 'kasir.collect'
-  | 'supervisor.corrections'
 
 export type AdminUser = {
   id: string

@@ -7,8 +7,7 @@ import { useMutation } from '@tanstack/react-query'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { api } from '@/lib/api'
 import { cn } from 'ui'
-import { useAuthStore } from '@/store/auth'
-import { Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react'
+import { Loader2, AlertCircle, Eye, EyeOff, MailCheck } from 'lucide-react'
 import { useState } from 'react'
 
 const schema = z
@@ -30,23 +29,20 @@ const schema = z
 type FormValues = z.infer<typeof schema>
 
 type RegisterResponse = {
-  data: {
-    token: string
-    user: { id: string; name: string; email: string; role: 'customer' }
-  }
+  message: string
 }
 
 export default function RegisterPage() {
-  const router = useRouter()
   const searchParams = useSearchParams()
-  const auth = useAuthStore()
   const redirect = searchParams.get('redirect') ?? '/account'
 
   const [showPassword, setShowPassword] = useState(false)
+  const [registeredEmail, setRegisteredEmail] = useState<string | null>(null)
 
   const {
     register,
     handleSubmit,
+    getValues,
     formState: { errors },
   } = useForm<FormValues>({ resolver: zodResolver(schema) })
 
@@ -57,12 +53,63 @@ export default function RegisterPage() {
         email: values.email,
         phone: values.phone,
         password: values.password,
+        passwordConfirmation: values.passwordConfirm,
       }),
-    onSuccess: (res) => {
-      auth.setAuth(res.data.user, res.data.token)
-      router.push(redirect)
+    onSuccess: () => {
+      setRegisteredEmail(getValues('email'))
     },
   })
+
+  const resendMutation = useMutation({
+    mutationFn: (email: string) =>
+      api.postSnake('/auth/customer/resend-verification', { email }),
+  })
+
+  // ── Layar sukses: cek email ──────────────────────────────────────────────────
+  if (registeredEmail) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-sm text-center">
+          <div className="flex items-center justify-center mb-6">
+            <div className="w-20 h-20 rounded-full bg-emerald-50 flex items-center justify-center">
+              <MailCheck className="w-10 h-10 text-emerald-600" />
+            </div>
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Cek Email Anda</h1>
+          <p className="text-gray-500 text-sm mb-1">
+            Link verifikasi telah dikirim ke:
+          </p>
+          <p className="text-emerald-700 font-semibold text-sm mb-6">{registeredEmail}</p>
+          <p className="text-gray-500 text-sm mb-8">
+            Klik link di email untuk mengaktifkan akun Anda. Link berlaku selama <strong>24 jam</strong>.
+          </p>
+
+          {resendMutation.isSuccess ? (
+            <p className="text-sm text-emerald-600 font-medium mb-4">
+              Email verifikasi baru telah dikirim.
+            </p>
+          ) : (
+            <button
+              onClick={() => resendMutation.mutate(registeredEmail)}
+              disabled={resendMutation.isPending}
+              className="text-sm text-gray-500 hover:text-emerald-700 transition-colors disabled:opacity-50"
+            >
+              {resendMutation.isPending ? 'Mengirim...' : 'Tidak menerima email? Kirim ulang'}
+            </button>
+          )}
+
+          <div className="mt-6">
+            <a
+              href={`/auth/login${redirect !== '/account' ? `?redirect=${redirect}` : ''}`}
+              className="text-sm font-medium text-emerald-700 hover:underline"
+            >
+              Kembali ke halaman login
+            </a>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center px-4 py-12">

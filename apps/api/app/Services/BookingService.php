@@ -2,139 +2,126 @@
 
 namespace App\Services;
 
-use App\Enums\OrderStatus;
-use App\Jobs\SendBookingConfirmationEmail;
-use App\Models\AvailabilitySlot;
-use App\Models\Order;
-use App\Models\OrderItem;
-use App\Models\ProductVariant;
+use App\Models\Booking;
+use App\Models\BookingAddon;
+use App\Models\Invoice;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
-use Illuminate\Support\Str;
 
 class BookingService
 {
-    public function __construct(private TicketService $ticketService) {}
+    public function __construct(private readonly QrCodeService $qrCodeService) {}
 
-    public function createOrder(array $data): Order
+    /**
+     * Buat Booking setelah invoice PAID (PRD Section 13.3 Step 6).
+     * booking_code = ACT-YYYYMMDD-XXXXX via Redis atomic INCR.
+     */
+    public function createFromInvoice(Invoice $invoice): Booking
     {
-        return DB::transaction(function () use ($data) {
-            $subtotal       = 0;
-            $processedItems = [];
+        // Idempotency — jangan buat booking duplikat
+        if ($invoice->booking) {
+            return $invoice->booking;
+        }
 
-            foreach ($data['items'] as $item) {
-                $variant = ProductVariant::findOrFail($item['variant_id']);
+        $bookingCode = $this->generateBookingCode();
+        $qrToken     = $this->qrCodeService->generateToken();
 
-                // Use item-level slot_id if provided and numeric, otherwise find all-day slot
-                $slotId = $item['slot_id'] ?? null;
-                if ($slotId && is_numeric($slotId)) {
-                    $slot = AvailabilitySlot::lockForUpdate()->find($slotId);
-                    if (! $slot) {
-                        throw new \RuntimeException('Slot tidak ditemukan.');
-                    }
-                } else {
-                    // Prefer all-day slot (time_slot IS NULL); if none, use first time-specific slot
-                    $slot = AvailabilitySlot::lockForUpdate()
-                        ->where('product_id', $variant->product_id)
-                        ->whereDate('date', $data['date'])
-                        ->orderByRaw('(time_slot IS NULL) DESC')
-                        ->first();
-                    if (! $slot) {
-                        throw new \RuntimeException('Tidak ada slot tersedia untuk tanggal yang dipilih.');
-                    }
-                }
+        return DB::transaction(function () use ($invoice, $bookingCode, $qrToken) {
+            $qrCodePath = $this->qrCodeService->generateAndUpload($qrToken, $bookingCode);
 
-                $qtyAdult = (int) ($item['qty_adult'] ?? 0);
-                $qtyChild = (int) ($item['qty_child'] ?? 0);
-                $totalQty = $qtyAdult + $qtyChild;
-                $available = $slot->total_quota - $slot->booked_qty;
-
-                if ($slot->is_blocked || $available < $totalQty) {
-                    throw new \RuntimeException('Slot tidak tersedia atau kuota habis.');
-                }
-
-                $itemSubtotal = ($qtyAdult * $variant->price_adult) + ($qtyChild * $variant->price_child);
-                $subtotal    += $itemSubtotal;
-
-                $processedItems[] = [
-                    'variant'   => $variant,
-                    'slot'      => $slot,
-                    'qty_adult' => $qtyAdult,
-                    'qty_child' => $qtyChild,
-                    'subtotal'  => $itemSubtotal,
-                ];
-            }
-
-            $discount        = 0;
-            $total           = $subtotal;
-            $dpAmount        = null;
-            $remainingAmount = 0;
-
-            if ($data['payment_type'] === 'down_payment') {
-                $dpAmount        = (int) ceil($total * ($data['dp_percent'] / 100));
-                $remainingAmount = $total - $dpAmount;
-            }
-
-            $order = Order::create([
-                'booking_code'     => self::generateBookingCode(),
-                'user_id'          => $data['user_id'] ?? null,
-                'customer_name'    => $data['customer_name'],
-                'customer_email'   => $data['customer_email'],
-                'customer_phone'   => $data['customer_phone'],
-                'payment_type'     => $data['payment_type'],
-                'dp_percent'       => $data['dp_percent'] ?? null,
-                'dp_amount'        => $dpAmount,
-                'remaining_amount' => $remainingAmount,
-                'status'           => OrderStatus::Pending,
-                'subtotal'         => $subtotal,
-                'discount'         => $discount,
-                'total'            => $total,
-                'expires_at'       => now()->addSeconds(config('app.seat_hold_ttl', 600)),
+            $booking = Booking::create([
+                'booking_code'   => $bookingCode,
+                'invoice_id'     => $invoice->id,
+                'slot_id'        => $invoice->checkout_slot_id,
+                'customer_id'    => $invoice->customer_id,
+                'guest_name'     => $invoice->guest_name,
+                'guest_email'    => $invoice->guest_email,
+                'guest_phone'    => $invoice->guest_phone,
+                'pax_count'      => $invoice->pax_count,
+                'status'         => 'confirmed',
+                'total_amount'   => $invoice->total_amount,
+                'paid_amount'    => $invoice->due_now,
+                'payment_status' => $invoice->due_later > 0 ? 'partial' : 'paid',
+                'qr_code_token'  => $qrToken,
+                'qr_code_path'   => $qrCodePath,
+                'confirmed_at'   => now(),
             ]);
 
-            foreach ($processedItems as $pi) {
-                OrderItem::create([
-                    'order_id'         => $order->id,
-                    'variant_id'       => $pi['variant']->id,
-                    'slot_id'          => $pi['slot']->id,
-                    'qty_adult'        => $pi['qty_adult'],
-                    'qty_child'        => $pi['qty_child'],
-                    'unit_price_adult' => $pi['variant']->price_adult,
-                    'unit_price_child' => $pi['variant']->price_child,
-                    'subtotal'         => $pi['subtotal'],
-                ]);
-
-                $pi['slot']->increment('booked_qty', $pi['qty_adult'] + $pi['qty_child']);
+            // Buat booking_addons dari items invoice yang bertipe addon
+            foreach ($invoice->items ?? [] as $item) {
+                if (($item['type'] ?? '') === 'addon' && isset($item['addon_id'])) {
+                    BookingAddon::create([
+                        'booking_id' => $booking->id,
+                        'addon_id'   => $item['addon_id'],
+                        'quantity'   => $item['quantity'],
+                        'unit_price' => $item['unit_price'],
+                        'subtotal'   => $item['subtotal'],
+                    ]);
+                }
             }
 
-            $ttl = config('app.seat_hold_ttl', 600);
-            Redis::setex("seat_hold:{$order->id}", $ttl, $order->id);
-
-            try {
-                SendBookingConfirmationEmail::dispatch($order);
-            } catch (\Throwable) {
-                // Email failure must not abort the booking
+            // Update slot inventory
+            $slot = $booking->slot;
+            $slot->increment('booked_count', $booking->pax_count);
+            if ($slot->booked_count >= $slot->capacity) {
+                $slot->update(['status' => 'full']);
             }
 
-            return $order;
+            // Hapus slot lock Redis
+            Redis::del("slot_lock:{$invoice->checkout_slot_id}");
+
+            return $booking;
         });
     }
 
-    public static function generateInvoiceNumber(): string
+    /**
+     * Check-in tamu via QR scan (PRD Section 4.7.2).
+     */
+    public function validateQr(string $qrToken, int $slotId): array
     {
-        do {
-            $candidate = 'INV-' . now()->format('Ymd') . '-' . strtoupper(Str::random(8));
-        } while (DB::table('payments')->where('invoice_number', $candidate)->exists());
+        $booking = Booking::where('qr_code_token', $qrToken)->first();
 
-        return $candidate;
+        if (! $booking) {
+            return ['status' => 'invalid'];
+        }
+
+        if ($booking->slot_id !== $slotId) {
+            return ['status' => 'invalid']; // SALAH SLOT
+        }
+
+        if ($booking->status === 'attended') {
+            return [
+                'status'        => 'already_scanned',
+                'checked_in_at' => $booking->confirmed_at?->format('H:i'),
+            ];
+        }
+
+        if ($booking->status !== 'confirmed') {
+            return ['status' => 'invalid'];
+        }
+
+        $booking->update([
+            'status'       => 'attended',
+            'confirmed_at' => now(),
+        ]);
+
+        $slot = $booking->slot;
+
+        return [
+            'status'        => 'valid',
+            'guest_name'    => $booking->guest_name,
+            'activity_name' => $slot->activity->name,
+            'pax_count'     => $booking->pax_count,
+            'slot_time'     => $slot->start_time . '–' . $slot->end_time,
+        ];
     }
 
-    public static function generateBookingCode(): string
+    private function generateBookingCode(): string
     {
-        do {
-            $candidate = 'AMT-' . strtoupper(Str::random(8));
-        } while (DB::table('orders')->where('booking_code', $candidate)->exists());
+        $date = now()->format('Ymd');
+        $seq  = Redis::incr("act_seq:{$date}");
+        Redis::expire("act_seq:{$date}", 86400);
 
-        return $candidate;
+        return sprintf('ACT-%s-%05d', $date, $seq);
     }
 }

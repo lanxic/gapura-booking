@@ -12,8 +12,10 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
   const res = await fetch(`${API_URL}${path}`, { ...init, headers })
   if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: res.statusText }))
-    throw new Error(error.message ?? 'Request failed')
+    const body = await res.json().catch(() => ({ message: res.statusText }))
+    const err = new Error(body.message ?? 'Request failed') as Error & { code?: string }
+    if (body.code) err.code = body.code
+    throw err
   }
   return res.json() as Promise<T>
 }

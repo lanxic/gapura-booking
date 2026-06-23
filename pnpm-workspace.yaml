@@ -2,6 +2,7 @@ packages:
   - 'apps/web'
   - 'apps/admin'
   - 'apps/api'
+  - 'apps/scanner'
   - 'packages/*'
 
 ignoredBuiltDependencies:

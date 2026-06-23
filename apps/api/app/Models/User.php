@@ -4,16 +4,18 @@ namespace App\Models;
 
 use App\Enums\UserRole;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 
 class User extends Authenticatable implements JWTSubject
 {
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, SoftDeletes;
 
     protected $fillable = [
-        'name', 'email', 'password', 'role', 'is_active',
+        'name', 'email', 'phone', 'password', 'role', 'is_active',
+        'email_verified_at', 'email_verification_token',
         'created_by', 'cloudinary_avatar_id', 'cloudinary_avatar_url',
     ];
 
@@ -44,46 +46,24 @@ class User extends Authenticatable implements JWTSubject
 
     public function getPermissions(): array
     {
-        return match($this->role) {
+        return match ($this->role) {
             UserRole::SuperAdmin => [
-                'products.manage', 'availability.manage', 'orders.view', 'orders.manage',
-                'vouchers.manage', 'reports.view', 'reports.export', 'users.manage',
-                'corrections.review', 'activity_logs.view', 'activity_logs.export',
-                'settings.manage',
+                'activities.manage', 'bookings.view', 'bookings.manage',
+                'offers.manage', 'users.manage', 'activity_logs.view',
+                'activity_logs.export', 'settings.manage',
             ],
             UserRole::Admin => [
-                'products.manage', 'availability.manage', 'orders.view', 'orders.manage',
-                'vouchers.manage', 'reports.view', 'reports.export', 'users.manage',
-                'corrections.review', 'activity_logs.view', 'activity_logs.export',
-                'settings.manage',
+                'activities.manage', 'bookings.view', 'bookings.manage',
+                'offers.manage', 'users.manage', 'activity_logs.view',
+                'activity_logs.export',
             ],
-            UserRole::Supervisor => [
-                'orders.view', 'corrections.review', 'activity_logs.view',
-                'supervisor.corrections',
-            ],
-            UserRole::Kasir    => ['kasir.collect', 'corrections.submit'],
-            UserRole::Scanner  => ['scanner.scan', 'corrections.submit'],
-            UserRole::Customer => [],
+            UserRole::Scanner => ['scanner.scan'],
+            default           => [],
         };
-    }
-
-    public function orders()
-    {
-        return $this->hasMany(Order::class);
     }
 
     public function activityLogs()
     {
         return $this->hasMany(ActivityLog::class);
-    }
-
-    public function correctionRequestsSubmitted()
-    {
-        return $this->hasMany(CorrectionRequest::class, 'requested_by');
-    }
-
-    public function correctionRequestsReviewed()
-    {
-        return $this->hasMany(CorrectionRequest::class, 'reviewed_by');
     }
 }

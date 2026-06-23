@@ -13,7 +13,7 @@ class UserManagementController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $adminRoles = ['super_admin', 'admin', 'supervisor', 'kasir', 'scanner'];
+        $adminRoles = ['super_admin', 'admin', 'scanner'];
 
         $users = User::whereIn('role', $adminRoles)
             ->when($request->search, fn($q, $s) =>
@@ -40,7 +40,7 @@ class UserManagementController extends Controller
             'name'     => 'required|string|max:255',
             'email'    => 'required|email|unique:users',
             'password' => 'required|string|min:8',
-            'role'     => 'required|in:admin,supervisor,kasir,scanner',
+            'role'     => 'required|in:admin,scanner',
         ]);
 
         if ($validator->fails()) {

@@ -1,123 +1,133 @@
-export type Product = {
-  id: string
+// ─── Activity Booking Domain (PRD v4.0) ──────────────────────────────────────
+
+export type ActivityMedia = {
+  id: number
+  url: string
+  type: 'image' | 'video'
+  is_primary: boolean
+}
+
+export type ActivityAddon = {
+  id: number
+  name: string
+  price: number
+  unit: string
+  max_qty: number
+  is_active: boolean
+}
+
+export type Activity = {
+  id: number
   name: string
   slug: string
+  category: string
   description: string
-  location: string | null
-  openingHours: string | null
-  meetingPoint: string | null
-  instantConfirmation: boolean
-  highlights: string[]
-  usageInstructions: string | null
-  cancellationPolicy: string | null
-  termsConditions: string | null
-  cloudinaryImageUrl: string | null
-  cloudinaryThumbnailUrl: string | null
-  cloudinaryGalleryUrls: string[]
-  isActive: boolean
-  sortOrder: number
-  variants: ProductVariant[]
-  addons: Addon[]
+  duration_minutes: number
+  min_pax: number
+  max_pax: number
+  level: 'beginner' | 'intermediate' | 'advanced' | 'all'
+  min_age: number | null
+  base_price: number
+  status: 'active' | 'inactive' | 'archived'
+  meta: Record<string, unknown>
+  media: ActivityMedia[]
+  addons: ActivityAddon[]
 }
 
-export type ProductVariant = {
-  id: string
-  productId: string
-  label: string
-  description: string | null
-  priceAdult: number
-  priceChild: number
-  minQty: number
-  maxQty: number
-  adultMinAge: number
-  adultMaxAge: number
-  childMinAge: number
-  childMaxAge: number
-  isActive: boolean
-}
-
-export type Addon = {
-  id: string
-  name: string
-  description: string
-  price: number
-  maxQty: number
-  isActive: boolean
-}
-
-export type AvailabilitySlot = {
-  id: string
-  productId: string
+export type ActivitySlot = {
+  id: number
   date: string
-  timeSlot: string | null
-  totalQuota: number
-  bookedQty: number
-  isBlocked: boolean
-  remaining: number
-  status: 'available' | 'limited' | 'full' | 'blocked'
+  start_time: string
+  end_time: string
+  capacity: number
+  booked_count: number
+  price: number
+  status: 'available' | 'full' | 'cancelled'
+  remaining_capacity: number
 }
 
-export type Order = {
-  id: string
-  bookingCode: string
-  customerName: string
-  customerEmail: string
-  customerPhone: string
-  paymentType: 'full' | 'down_payment'
-  dpPercent: number | null
-  dpAmount: number | null
-  remainingAmount: number
-  status: OrderStatus
-  subtotal: number
-  discount: number
-  total: number
-  expiresAt: string
-  items: OrderItem[]
-  payments: Payment[]
-  tickets: Ticket[]
+export type Invoice = {
+  invoice_code: string
+  status: 'draft' | 'pending' | 'paid' | 'expired' | 'failed' | 'refunded'
+  total_amount: number
+  due_now: number
+  due_later: number
+  payment_plan: 'FULL' | 'DP30' | 'DP50'
+  due_at: string
+  paid_at: string | null
+  payment_url: string | null
+  booking_code: string | null
 }
 
-export type OrderStatus =
-  | 'pending'
-  | 'awaiting_payment'
-  | 'dp_paid'
-  | 'paid'
-  | 'confirmed'
-  | 'cancelled'
-  | 'refunded'
-  | 'expired'
-
-export type OrderItem = {
-  id: string
-  orderId: string
-  variantId: string
-  slotId: string
-  qtyAdult: number
-  qtyChild: number
-  unitPriceAdult: number
-  unitPriceChild: number
-  subtotal: number
+export type Booking = {
+  booking_code: string
+  status: 'confirmed' | 'attended' | 'cancelled' | 'no_show'
+  pax: number
+  guest_name: string
+  guest_email: string
+  guest_phone: string
+  notes: string | null
+  created_at: string
+  activity: {
+    id: number
+    name: string
+    slug: string
+    category: string
+    image: string | null
+  } | null
+  slot: {
+    date: string
+    start_time: string
+    end_time: string
+  } | null
+  invoice: {
+    invoice_code: string
+    total_amount: number
+    payment_plan: string
+    paid_at: string | null
+  } | null
+  addons: { name: string; qty: number; price: number }[]
 }
 
-export type Payment = {
-  id: string
-  orderId: string
-  gateway: 'midtrans' | 'cash'
-  snapToken: string | null
-  refId: string | null
-  paymentType: 'dp' | 'full' | 'remaining'
-  amount: number
-  status: 'pending' | 'success' | 'failed' | 'expired' | 'refunded'
-  paidAt: string | null
+export type Offer = {
+  id: number
+  title: string
+  slug: string
+  image: string | null
+  description: string | null
+  start_date: string
+  end_date: string
+  discount_type: 'percent' | 'fixed'
+  discount_value: number
+  badge: string | null
+  is_active: boolean
+  activities: { id: number; name: string; slug: string }[]
 }
 
-export type Ticket = {
-  id: string
-  orderItemId: string
-  qrCode: string
-  cloudinaryPdfUrl: string
-  status: 'unused' | 'used' | 'expired' | 'cancelled'
-  usedAt: string | null
+export type PromoValidationResult = {
+  valid: boolean
+  code: string
+  discount_type: 'percent' | 'fixed'
+  discount_value: number
+  discount_amount: number
+}
+
+// ─── Pagination ───────────────────────────────────────────────────────────────
+
+export type PaginatedResponse<T> = {
+  data: T[]
+  meta: {
+    current_page: number
+    last_page: number
+    per_page: number
+    total: number
+  }
+  links: {
+    first: string | null
+    last: string | null
+    prev: string | null
+    next: string | null
+  }
 }
 
 export type ApiResponse<T> = {
@@ -125,12 +135,13 @@ export type ApiResponse<T> = {
   message?: string
 }
 
-export type PaginatedResponse<T> = {
-  data: T[]
-  meta: {
-    currentPage: number
-    lastPage: number
-    perPage: number
-    total: number
-  }
+// ─── Auth ─────────────────────────────────────────────────────────────────────
+
+export type AuthUser = {
+  id: number
+  name: string
+  email: string
+  role: 'customer'
+  permissions: string[]
+  avatarUrl: string | null
 }

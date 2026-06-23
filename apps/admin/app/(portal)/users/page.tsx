@@ -18,28 +18,22 @@ import { cn } from '@/lib/utils'
 const ROLE_LABELS: Record<string, string> = {
   super_admin: 'Super Admin',
   admin:       'Admin',
-  supervisor:  'Supervisor',
-  kasir:       'Cashier',
   scanner:     'Scanner',
 }
 
 const ROLE_COLORS: Record<string, string> = {
   super_admin: 'bg-violet-50 text-violet-700',
   admin:       'bg-blue-50 text-blue-700',
-  supervisor:  'bg-amber-50 text-amber-700',
-  kasir:       'bg-cyan-50 text-cyan-700',
   scanner:     'bg-gray-100 text-gray-600',
 }
 
 const AVATAR_BG: Record<string, string> = {
   super_admin: 'bg-violet-500',
   admin:       'bg-blue-500',
-  supervisor:  'bg-amber-500',
-  kasir:       'bg-cyan-500',
   scanner:     'bg-gray-400',
 }
 
-const EDITABLE_ROLES: AdminRole[] = ['admin', 'supervisor', 'kasir', 'scanner']
+const EDITABLE_ROLES: AdminRole[] = ['admin', 'scanner']
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -104,7 +98,7 @@ function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label:
 
 function CreateUserModal({ onClose, token }: { onClose: () => void; token: string }) {
   const queryClient = useQueryClient()
-  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'kasir' as AdminRole })
+  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'admin' as AdminRole })
   const [error, setError] = useState('')
 
   const mutation = useMutation({
@@ -454,7 +448,7 @@ export default function UsersPage() {
         <UserDetailModal
           user={selected}
           token={token}
-          currentUserId={currentUser?.id ?? 0}
+          currentUserId={Number(currentUser?.id ?? 0)}
           onClose={() => setSelected(null)}
         />
       )}

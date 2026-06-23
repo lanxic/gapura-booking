@@ -9,8 +9,6 @@ import { cn } from '@/lib/utils'
 const ROLE_LABELS: Record<AdminRole, string> = {
   super_admin: 'Super Admin',
   admin:       'Admin',
-  supervisor:  'Supervisor',
-  kasir:       'Cashier',
   scanner:     'Scanner',
 }
 

@@ -1,17 +1,11 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-
-type CustomerUser = {
-  id: string
-  name: string
-  email: string
-  role: 'customer'
-}
+import type { AuthUser } from '@/types'
 
 type AuthState = {
-  user: CustomerUser | null
+  user: AuthUser | null
   token: string | null
-  setAuth: (user: CustomerUser, token: string) => void
+  setAuth: (user: AuthUser, token: string) => void
   clear: () => void
   isAuthenticated: () => boolean
 }

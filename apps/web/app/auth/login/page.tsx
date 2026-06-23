@@ -8,7 +8,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { api } from '@/lib/api'
 import { cn } from 'ui'
 import { useAuthStore } from '@/store/auth'
-import { Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react'
+import { Loader2, AlertCircle, Eye, EyeOff, MailCheck, CheckCircle } from 'lucide-react'
 import { useState } from 'react'
 
 const schema = z.object({
@@ -29,13 +29,17 @@ export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const auth = useAuthStore()
-  const redirect = searchParams.get('redirect') ?? '/account'
+  const redirect    = searchParams.get('redirect') ?? '/account'
+  const justVerified = searchParams.get('verified') === '1'
 
-  const [showPassword, setShowPassword] = useState(false)
+  const [showPassword, setShowPassword]         = useState(false)
+  const [emailNotVerified, setEmailNotVerified] = useState(false)
+  const [lastEmail, setLastEmail]               = useState('')
 
   const {
     register,
     handleSubmit,
+    getValues,
     formState: { errors },
   } = useForm<FormValues>({ resolver: zodResolver(schema) })
 
@@ -46,6 +50,19 @@ export default function LoginPage() {
       auth.setAuth(res.data.user, res.data.token)
       router.push(redirect)
     },
+    onError: (err: any) => {
+      if (err?.code === 'EMAIL_NOT_VERIFIED') {
+        setEmailNotVerified(true)
+        setLastEmail(getValues('email'))
+      } else {
+        setEmailNotVerified(false)
+      }
+    },
+  })
+
+  const resendMutation = useMutation({
+    mutationFn: (email: string) =>
+      api.postSnake('/auth/customer/resend-verification', { email }),
   })
 
   return (
@@ -57,10 +74,18 @@ export default function LoginPage() {
           <p className="text-gray-500 text-sm">Sign in to continue</p>
         </div>
 
+        {/* Banner email baru saja diverifikasi */}
+        {justVerified && (
+          <div className="flex items-start gap-2 p-3 mb-4 bg-emerald-50 border border-emerald-200 rounded-xl text-sm text-emerald-700">
+            <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <span>Email berhasil diverifikasi! Silakan masuk.</span>
+          </div>
+        )}
+
         <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-gray-900 mb-5">Sign In</h2>
 
-          <form onSubmit={handleSubmit((v) => login.mutate(v))} className="space-y-4">
+          <form onSubmit={handleSubmit((v) => { setEmailNotVerified(false); login.mutate(v) })} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Email
@@ -108,11 +133,37 @@ export default function LoginPage() {
               )}
             </div>
 
-            {login.isError && (
+            {/* Error: email belum verifikasi */}
+            {emailNotVerified && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm">
+                <div className="flex items-start gap-2 text-amber-700 mb-2">
+                  <MailCheck className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                  <span>
+                    Email Anda belum diverifikasi. Silakan cek kotak masuk
+                    {lastEmail ? <> email <strong>{lastEmail}</strong></> : ' email Anda'}.
+                  </span>
+                </div>
+                {resendMutation.isSuccess ? (
+                  <p className="text-xs text-emerald-600 font-medium pl-6">Email verifikasi baru telah dikirim.</p>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => resendMutation.mutate(lastEmail)}
+                    disabled={resendMutation.isPending}
+                    className="text-xs font-medium text-amber-700 underline pl-6 disabled:opacity-50"
+                  >
+                    {resendMutation.isPending ? 'Mengirim...' : 'Kirim ulang email verifikasi'}
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Error umum */}
+            {login.isError && !emailNotVerified && (
               <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
                 <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                 <span>
-                  {(login.error as Error)?.message ?? 'Incorrect email or password.'}
+                  {(login.error as Error)?.message ?? 'Email atau password salah.'}
                 </span>
               </div>
             )}

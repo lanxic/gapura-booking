@@ -10,11 +10,10 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             UserSeeder::class,
-            ProductSeeder::class,
-            VoucherSeeder::class,
-            OrderSeeder::class,
             ActivityLogSeeder::class,
-            CorrectionRequestSeeder::class,
+            // PRD v4.0 — Activity Booking domain
+            ActivitySeeder::class,
+            ActivitySlotSeeder::class,
         ]);
 
         $this->command->newLine();
@@ -24,8 +23,6 @@ class DatabaseSeeder extends Seeder
             [
                 ['super_admin', 'superadmin@amartha.test', 'password'],
                 ['admin',       'admin@amartha.test',      'password'],
-                ['supervisor',  'supervisor@amartha.test', 'password'],
-                ['kasir',       'kasir@amartha.test',      'password'],
                 ['scanner',     'scanner@amartha.test',    'password'],
                 ['customer',    'customer@amartha.test',   'password'],
                 ['customer',    'customer2@amartha.test',  'password'],

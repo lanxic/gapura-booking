@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\SiteSetting;
+use App\Models\StorageProvider;
 use Cloudinary\Cloudinary;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
@@ -11,7 +11,10 @@ class CloudinaryService
 {
     private function config(): array
     {
-        return Cache::remember('cloudinary_config', 300, fn() => SiteSetting::getCastGroup('cloudinary'));
+        return Cache::remember('cloudinary_config', 300, function () {
+            $provider = StorageProvider::where('name', 'cloudinary')->first();
+            return $provider?->config ?? [];
+        });
     }
 
     private function client(): Cloudinary
@@ -94,9 +97,9 @@ class CloudinaryService
     {
         $cfg = $this->config();
         return [
-            'products' => $cfg['folder_products'] ?? 'amartha/products',
-            'tickets'  => $cfg['folder_tickets']  ?? 'amartha/tickets',
-            'avatars'  => $cfg['folder_avatars']  ?? 'amartha/avatars',
+            'activities' => $cfg['folder_activities'] ?? 'amartha/activities',
+            'bookings'   => $cfg['folder_bookings']   ?? 'amartha/bookings',
+            'avatars'    => $cfg['folder_avatars']    ?? 'amartha/avatars',
         ];
     }
 
