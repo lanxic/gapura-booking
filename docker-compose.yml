@@ -33,6 +33,20 @@ services:
       timeout: 5s
       retries: 5
 
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: amartha-phpmyadmin
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: amartha
+      PMA_PASSWORD: secret
+    ports:
+      - "8080:80"
+
   mailpit:
     image: axllent/mailpit:latest
     container_name: amartha-mailpit

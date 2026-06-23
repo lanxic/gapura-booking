@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: 'Amartha eTicket',
-  description: 'Pesan tiket wisata dengan mudah dan cepat',
+  description: 'Book your travel tickets easily and quickly',
 }
 
 // ─── Server-side settings fetch ───────────────────────────────────────────────
@@ -190,9 +190,9 @@ function Footer({ s }: { s: GeneralSettings }) {
   const bgColor = s.footer_bg_color?.trim() || '#1a1a2e'
 
   const contactCols = [
-    email   && { icon: <IconMail />,  label: 'Hubungi Kami',  value: email,   href: `mailto:${email}` },
-    phone   && { icon: <IconPhone />, label: 'Nomor Telepon', value: phone,   href: `tel:${phone.replace(/\s/g, '')}` },
-    address && { icon: <IconBook />,  label: 'Alamat',        value: address, href: null },
+    email   && { icon: <IconMail />,  label: 'Contact Us',   value: email,   href: `mailto:${email}` },
+    phone   && { icon: <IconPhone />, label: 'Phone Number',  value: phone,   href: `tel:${phone.replace(/\s/g, '')}` },
+    address && { icon: <IconBook />,  label: 'Address',       value: address, href: null },
   ].filter(Boolean) as { icon: React.ReactNode; label: string; value: string; href: string | null }[]
 
   return (
@@ -278,9 +278,9 @@ function Footer({ s }: { s: GeneralSettings }) {
         <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-[12px] text-white/30 order-2 sm:order-1">{copyright}</p>
           <nav className="flex items-center gap-5 order-1 sm:order-2">
-            <Link href="/" className="text-[12px] text-white/30 transition-colors hover:text-white/60">Beranda</Link>
-            <Link href="/products" className="text-[12px] text-white/30 transition-colors hover:text-white/60">Produk</Link>
-            <Link href="/account" className="text-[12px] text-white/30 transition-colors hover:text-white/60">Akun Saya</Link>
+            <Link href="/" className="text-[12px] text-white/30 transition-colors hover:text-white/60">Home</Link>
+            <Link href="/" className="text-[12px] text-white/30 transition-colors hover:text-white/60">Products</Link>
+            <Link href="/account" className="text-[12px] text-white/30 transition-colors hover:text-white/60">My Account</Link>
           </nav>
         </div>
       </div>
@@ -297,7 +297,7 @@ export default async function RootLayout({
   const settings = await fetchGeneralSettings()
 
   return (
-    <html lang="id" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-gray-50 text-gray-900">
         <Providers>
           {/* Header */}

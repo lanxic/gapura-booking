@@ -33,15 +33,15 @@ const COUNTRIES = [
 ]
 
 const schema = z.object({
-  customerEmail: z.string().email('Email tidak valid'),
-  customerName: z.string().min(2, 'Nama minimal 2 karakter'),
+  customerEmail: z.string().email('Invalid email address'),
+  customerName: z.string().min(2, 'Name must be at least 2 characters'),
   countryCode: z.string().min(1),
   customerPhone: z
     .string()
-    .min(7, 'Nomor telepon minimal 7 digit')
-    .regex(/^[0-9]+$/, 'Hanya angka'),
-  country: z.string().min(1, 'Pilih negara'),
-  agreeTerms: z.literal(true, { errorMap: () => ({ message: 'Anda harus menyetujui syarat & ketentuan' }) }),
+    .min(7, 'Phone number must be at least 7 digits')
+    .regex(/^[0-9]+$/, 'Numbers only'),
+  country: z.string().min(1, 'Please select a country'),
+  agreeTerms: z.literal(true, { errorMap: () => ({ message: 'You must agree to the terms & conditions' }) }),
   voucherCode: z.string().optional(),
   bookingForOther: z.boolean().optional(),
   guestTitle: z.string().optional(),
@@ -99,11 +99,11 @@ export default function CheckoutPage() {
       api.postSnake<ApiResponse<{ discount: number }>>('/vouchers/validate', { code }),
     onSuccess: (res) => {
       cart.setVoucher(voucherInput, res.data.discount)
-      setVoucherMsg({ ok: true, text: `Voucher berhasil! Diskon ${formatRupiah(res.data.discount)}` })
+      setVoucherMsg({ ok: true, text: `Voucher applied! Discount ${formatRupiah(res.data.discount)}` })
     },
     onError: () => {
       cart.clearVoucher()
-      setVoucherMsg({ ok: false, text: 'Kode voucher tidak valid atau sudah kadaluarsa.' })
+      setVoucherMsg({ ok: false, text: 'Invalid or expired voucher code.' })
     },
   })
 
@@ -113,9 +113,9 @@ export default function CheckoutPage() {
         token: auth.token ?? undefined,
       }),
     onSuccess: (res) => {
-      const order = res.data
+      const order = res.data as unknown as Record<string, unknown>
       cart.clear()
-      router.push(`/booking-success?code=${order.bookingCode}&orderId=${order.id}`)
+      router.push(`/payment?code=${order.booking_code}`)
     },
   })
 
@@ -132,7 +132,9 @@ export default function CheckoutPage() {
       payment_type: 'full',
       voucher_code: cart.voucher?.code ?? undefined,
       items: cart.tickets.map((t) => ({
+        product_id: t.productId,
         variant_id: t.variantId,
+        ...(cart.slotId && cart.slotId !== 'all-day' ? { slot_id: cart.slotId } : {}),
         qty_adult: t.qtyAdult,
         qty_child: t.qtyChild,
         addons: t.addons,
@@ -145,16 +147,16 @@ export default function CheckoutPage() {
   if (cart.tickets.length === 0) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-20 text-center text-gray-500">
-        <p className="text-lg font-medium">Keranjang kamu kosong.</p>
-        <a href="/products" className="text-emerald-600 hover:underline text-sm mt-2 inline-block">
-          Lihat produk wisata
+        <p className="text-lg font-medium">Your cart is empty.</p>
+        <a href="/" className="text-emerald-600 hover:underline text-sm mt-2 inline-block">
+          Browse products
         </a>
       </div>
     )
   }
 
   const visitDate = cart.selectedDate
-    ? new Date(cart.selectedDate + 'T00:00:00').toLocaleDateString('id-ID', {
+    ? new Date(cart.selectedDate + 'T00:00:00').toLocaleDateString('en-GB', {
         day: 'numeric', month: 'short', year: 'numeric',
       })
     : null
@@ -168,7 +170,7 @@ export default function CheckoutPage() {
         <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Checkout</h1>
         <Link href="/" className="text-sm text-gray-500 border border-gray-300 px-4 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">
-          Kembali Ke Beranda
+          Back to Home
         </Link>
       </div>
 
@@ -177,34 +179,14 @@ export default function CheckoutPage() {
         <div className="bg-white border border-gray-200 rounded-2xl p-3 flex flex-col md:flex-row items-center gap-3 md:gap-4">
           <div className="flex-1 min-w-0 flex items-center gap-3">
             <div className="text-[11px] text-gray-400 uppercase tracking-wider">Check In</div>
-            <div className="font-medium text-gray-800">{visitDate ?? 'Pilih tanggal'}</div>
+            <div className="font-medium text-gray-800">{visitDate ?? 'Select date'}</div>
           </div>
 
           <div className="flex-1 min-w-0 flex items-center gap-3">
-            <div className="text-[11px] text-gray-400 uppercase tracking-wider">Tamu</div>
+            <div className="text-[11px] text-gray-400 uppercase tracking-wider">Guests</div>
             <div className="font-medium text-gray-800">{totalAdults} Adult, {totalChildren} Children</div>
           </div>
 
-          <div className="flex-1 min-w-0 flex items-center gap-3">
-            <div className="text-[11px] text-gray-400 uppercase tracking-wider">Promo Code</div>
-            <input
-              type="text"
-              value={voucherInput}
-              onChange={e => setVoucherInput(e.target.value.toUpperCase())}
-              placeholder="Kode Promo"
-              className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            />
-          </div>
-
-          <div className="flex-none">
-            <button
-              type="button"
-              onClick={() => { if (voucherInput) applyVoucher.mutate(voucherInput) }}
-              className="px-4 py-2 bg-emerald-800 text-white rounded-lg font-medium hover:bg-emerald-900 transition-colors"
-            >
-              Update
-            </button>
-          </div>
         </div>
       </div>
 
@@ -214,15 +196,15 @@ export default function CheckoutPage() {
           <div className="lg:col-span-2 space-y-5">
             {/* Notice */}
             <div className="bg-white border border-gray-200 rounded-xl p-5">
-              <h2 className="font-semibold text-gray-800 mb-2">Hal-hal yang perlu diperhatikan</h2>
+              <h2 className="font-semibold text-gray-800 mb-2">Important Information</h2>
               <p className="text-sm text-gray-600">
-                Mohon dicek kembali transaksi anda, sebelum anda melakukan pembayaran
+                Please review your transaction carefully before proceeding to payment.
               </p>
             </div>
 
             {/* Contact Info */}
             <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
-              <h2 className="font-semibold text-gray-800">Kontak Informasi</h2>
+              <h2 className="font-semibold text-gray-800">Contact Information</h2>
 
               {/* Email */}
               <div>
@@ -239,7 +221,7 @@ export default function CheckoutPage() {
                   <p className="text-xs text-red-500 mt-1">{errors.customerEmail.message}</p>
                 )}
                 <p className="text-xs text-gray-400 mt-1">
-                  ℹ Harap berikan email yang valid untuk menerima e-Tiket Anda.
+                  ℹ Please provide a valid email to receive your e-ticket.
                 </p>
               </div>
 
@@ -248,7 +230,7 @@ export default function CheckoutPage() {
                 <input
                   {...register('customerName')}
                   type="text"
-                  placeholder="Nama*"
+                  placeholder="Full Name*"
                   className={cn(
                     'w-full px-4 py-3 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500',
                     errors.customerName ? 'border-red-400' : 'border-gray-200',
@@ -269,7 +251,7 @@ export default function CheckoutPage() {
                       className="h-full pl-8 pr-2 py-3 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white appearance-none"
                     >
                       {COUNTRY_CODES.map(c => (
-                        <option key={c.code} value={c.code}>{c.flag} {c.code}</option>
+                        <option key={c.code} value={c.code}>{c.code}</option>
                       ))}
                     </select>
                     <span className="absolute left-2 top-1/2 -translate-y-1/2 text-base pointer-events-none">
@@ -279,7 +261,7 @@ export default function CheckoutPage() {
                   <input
                     {...register('customerPhone')}
                     type="tel"
-                    placeholder="Nomor Telepon*"
+                    placeholder="Phone Number*"
                     className={cn(
                       'flex-1 px-4 py-3 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500',
                       errors.customerPhone ? 'border-red-400' : 'border-gray-200',
@@ -316,12 +298,12 @@ export default function CheckoutPage() {
                   <input
                     {...register('agreeTerms')}
                     type="checkbox"
-                    className="mt-0.5 w-4 h-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                    className="mt-0.5 w-5 h-5 rounded border-gray-300 accent-emerald-600 focus:ring-emerald-500 shrink-0"
                   />
                   <span className="text-sm text-gray-600">
-                    Dengan melakukan pembelian ini, saya menyatakan bahwa saya telah membaca, memahami, dan menyetujui{' '}
+                    By completing this purchase, I confirm that I have read, understood, and agreed to the{' '}
                     <a href="#" className="text-emerald-600 hover:underline">
-                      Persyaratan dan Ketentuan berikut.*
+                      Terms and Conditions.*
                     </a>
                   </span>
                 </label>
@@ -407,11 +389,11 @@ export default function CheckoutPage() {
             <div className="bg-white border border-gray-200 rounded-xl p-5 sticky top-20 space-y-4 overflow-visible">
               <div className="flex items-center justify-between">
                 <h2 className="font-semibold text-gray-800">
-                  Keranjang Saya ({cart.tickets.length})
+                  My Cart ({cart.tickets.length})
                 </h2>
                 <button
                   type="button"
-                  onClick={() => { cart.clear(); router.push('/products') }}
+                  onClick={() => { cart.clear(); router.push('/') }}
                   className="text-gray-400 hover:text-red-500 transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -422,7 +404,9 @@ export default function CheckoutPage() {
               {cart.tickets.map(ticket => (
                 <div key={ticket.variantId} className="text-sm text-gray-700 space-y-1 border-b border-gray-100 pb-3">
                   <p className="font-semibold text-gray-800 leading-snug">{ticket.variantLabel.split('[')[0].trim()}</p>
-                  <p className="text-gray-500 text-xs">{ticket.variantLabel}</p>
+                  {ticket.variantLabel.includes('[') && (
+                    <p className="text-gray-500 text-xs">{ticket.variantLabel}</p>
+                  )}
                   <p className="text-gray-500">
                     {ticket.qtyAdult > 0 && `${ticket.qtyAdult} X ADULT`}
                     {ticket.qtyAdult > 0 && ticket.qtyChild > 0 && ', '}
@@ -434,13 +418,13 @@ export default function CheckoutPage() {
 
               {/* Promo code */}
               <div className="relative">
-                <p className="text-sm font-semibold text-gray-700 mb-2">Masukkan Kode Promo</p>
+                <p className="text-sm font-semibold text-gray-700 mb-2">Enter Promo Code</p>
                 <div className="relative">
                   <input
                     type="text"
                     value={voucherInput}
                     onChange={e => setVoucherInput(e.target.value.toUpperCase())}
-                    placeholder="Kode Promo"
+                    placeholder="Promo Code"
                     className="w-full pr-28 px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                   <button
@@ -449,7 +433,7 @@ export default function CheckoutPage() {
                     disabled={applyVoucher.isPending || !voucherInput}
                     className="absolute right-[-12px] top-1/2 -translate-y-1/2 bg-emerald-700 text-white rounded-full px-4 py-2 text-sm font-medium hover:bg-emerald-800 disabled:opacity-60 shadow-md transition-colors"
                   >
-                    {applyVoucher.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Terapkan'}
+                    {applyVoucher.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Apply'}
                   </button>
                 </div>
                 {voucherMsg && (
@@ -463,7 +447,7 @@ export default function CheckoutPage() {
               <div className="pt-2 border-t border-gray-100">
                 {discount > 0 && (
                   <div className="flex justify-between text-sm text-emerald-600 mb-1">
-                    <span>Diskon</span>
+                    <span>Discount</span>
                     <span>-{formatRupiah(discount)}</span>
                   </div>
                 )}
@@ -475,7 +459,7 @@ export default function CheckoutPage() {
 
               {createOrder.isError && (
                 <p className="text-xs text-red-500">
-                  {(createOrder.error as Error)?.message ?? 'Gagal membuat pesanan. Coba lagi.'}
+                  {(createOrder.error as Error)?.message ?? 'Failed to create order. Please try again.'}
                 </p>
               )}
             </div>
@@ -489,7 +473,7 @@ export default function CheckoutPage() {
             onClick={() => router.back()}
             className="px-6 py-2.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
           >
-            Kembali
+            Back
           </button>
           <button
             type="submit"
@@ -502,7 +486,7 @@ export default function CheckoutPage() {
             )}
           >
             {createOrder.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-            Lanjutkan Untuk Pembayaran
+            Continue to Payment
           </button>
         </div>
       </form>

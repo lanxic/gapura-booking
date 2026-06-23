@@ -9,13 +9,20 @@ import { cn } from '@/lib/utils'
 
 type Tab = 'umum' | 'pembayaran' | 'notifikasi' | 'email' | 'storage' | 'hero'
 
-const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
-  { id: 'umum',       label: 'Umum',           icon: Globe },
-  { id: 'pembayaran', label: 'Pembayaran',      icon: CreditCard },
-  { id: 'notifikasi', label: 'Notifikasi',      icon: Bell },
-  { id: 'email',      label: 'Email',           icon: Mail },
-  { id: 'storage',    label: 'Storage',         icon: HardDrive },
-  { id: 'hero',       label: 'Hero Storefront', icon: LayoutTemplate },
+type NavChild = { id: Tab; label: string; icon: React.ElementType }
+type NavItem =
+  | { kind: 'item';  id: Tab; label: string; icon: React.ElementType }
+  | { kind: 'group'; label: string; icon: React.ElementType; children: NavChild[] }
+
+const NAV: NavItem[] = [
+  { kind: 'item',  id: 'umum',       label: 'Umum',          icon: Globe },
+  { kind: 'item',  id: 'pembayaran', label: 'Pembayaran',    icon: CreditCard },
+  { kind: 'item',  id: 'notifikasi', label: 'Notifikasi',    icon: Bell },
+  { kind: 'item',  id: 'email',      label: 'Email',         icon: Mail },
+  { kind: 'item',  id: 'storage',    label: 'Storage',       icon: HardDrive },
+  { kind: 'group', label: 'Custom Layout', icon: LayoutTemplate, children: [
+    { id: 'hero', label: 'Hero', icon: LayoutTemplate },
+  ]},
 ]
 
 const DP_OPTIONS = [30, 50, 70]
@@ -135,7 +142,7 @@ function InlineUpload({ label, hint, urlValue, onUrlChange, uploadEndpoint, toke
   const [uploadError, setUploadError] = useState('')
 
   const handleFile = async (file: File) => {
-    if (!uploadEndpoint || !token) return
+    if (!uploadEndpoint || !token) { setUploadError('Sesi habis, silakan login ulang'); return }
     setUploading(true); setUploadError('')
     try {
       const fd = new FormData()
@@ -207,6 +214,7 @@ function InlineUpload({ label, hint, urlValue, onUrlChange, uploadEndpoint, toke
       </div>
       <input
         ref={inputRef} type="file" accept="image/*" className="hidden"
+        onClick={e => { (e.target as HTMLInputElement).value = '' }}
         onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f) }}
       />
     </div>
@@ -1364,11 +1372,6 @@ function TabHero({ token }: { token: string }) {
             {form.subtitle && (
               <p className="text-sm opacity-80 drop-shadow max-w-md">{form.subtitle}</p>
             )}
-            {form.cta_label && (
-              <span className="mt-1 px-5 py-2 rounded-lg bg-emerald-500 text-white text-xs font-semibold shadow">
-                {form.cta_label}
-              </span>
-            )}
           </div>
         </div>
       </div>
@@ -1400,18 +1403,6 @@ function TabHero({ token }: { token: string }) {
               placeholder="Deskripsi singkat yang tampil di bawah judul..."
               className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring transition resize-none"
             />
-          </Field>
-        </div>
-      </SectionCard>
-
-      {/* ── Tombol CTA ── */}
-      <SectionCard title="Tombol Aksi (CTA)">
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Teks Tombol">
-            <TextInput value={form.cta_label} onChange={set('cta_label')} placeholder="Pesan Tiket Sekarang" />
-          </Field>
-          <Field label="URL Tujuan" hint='Gunakan #produk untuk scroll ke daftar tiket'>
-            <TextInput value={form.cta_url} onChange={set('cta_url')} placeholder="#produk" />
           </Field>
         </div>
       </SectionCard>
@@ -1452,6 +1443,7 @@ function TabHero({ token }: { token: string }) {
 export default function SettingsGeneralPage() {
   const token = useAdminAuthStore(s => s.token)!
   const [tab, setTab] = useState<Tab>('umum')
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
 
   return (
     <div className="space-y-6">
@@ -1463,23 +1455,70 @@ export default function SettingsGeneralPage() {
       <div className="flex gap-6 items-start">
         {/* Sidebar */}
         <nav className="w-52 shrink-0 rounded-xl border border-border bg-card overflow-hidden">
-          {TABS.map(({ id, label, icon: Icon }, i) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setTab(id)}
-              className={cn(
-                'w-full flex items-center gap-3 px-4 py-3 text-sm text-left transition-colors',
-                i < TABS.length - 1 && 'border-b border-border',
-                tab === id
-                  ? 'bg-primary/10 text-primary font-semibold'
-                  : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground',
-              )}
-            >
-              <Icon size={15} className="shrink-0" />
-              {label}
-            </button>
-          ))}
+          {NAV.map((item, i) => {
+            const isLast = i === NAV.length - 1
+            if (item.kind === 'item') {
+              const Icon = item.icon
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setTab(item.id)}
+                  className={cn(
+                    'w-full flex items-center gap-3 px-4 py-3 text-sm text-left transition-colors',
+                    !isLast && 'border-b border-border',
+                    tab === item.id
+                      ? 'bg-primary/10 text-primary font-semibold'
+                      : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground',
+                  )}
+                >
+                  <Icon size={15} className="shrink-0" />
+                  {item.label}
+                </button>
+              )
+            }
+            const GroupIcon = item.icon
+            const isGroupActive = item.children.some(c => c.id === tab)
+            const isCollapsed = collapsed[item.label] ?? false
+            const toggleCollapse = () => setCollapsed(prev => ({ ...prev, [item.label]: !prev[item.label] }))
+            return (
+              <div key={item.label} className={cn(!isLast && 'border-b border-border')}>
+                <button
+                  type="button"
+                  onClick={toggleCollapse}
+                  className={cn(
+                    'w-full flex items-center gap-3 px-4 py-3 text-sm text-left transition-colors',
+                    !isCollapsed && 'border-b border-border',
+                    isGroupActive ? 'text-primary font-semibold' : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground',
+                  )}
+                >
+                  <GroupIcon size={15} className="shrink-0" />
+                  <span className="flex-1">{item.label}</span>
+                  <ChevronDown size={13} className={cn('shrink-0 transition-transform', isCollapsed && '-rotate-90')} />
+                </button>
+                {!isCollapsed && item.children.map((child, ci) => {
+                  const ChildIcon = child.icon
+                  return (
+                    <button
+                      key={child.id}
+                      type="button"
+                      onClick={() => setTab(child.id)}
+                      className={cn(
+                        'w-full flex items-center gap-3 pl-8 pr-4 py-2.5 text-sm text-left transition-colors',
+                        ci < item.children.length - 1 && 'border-b border-border',
+                        tab === child.id
+                          ? 'bg-primary/10 text-primary font-semibold'
+                          : 'text-muted-foreground hover:bg-muted/40 hover:text-foreground',
+                      )}
+                    >
+                      <ChildIcon size={13} className="shrink-0" />
+                      {child.label}
+                    </button>
+                  )
+                })}
+              </div>
+            )
+          })}
         </nav>
 
         {/* Content */}

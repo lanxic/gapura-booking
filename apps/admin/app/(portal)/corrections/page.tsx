@@ -18,9 +18,9 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  pending:  'Menunggu',
-  approved: 'Disetujui',
-  rejected: 'Ditolak',
+  pending:  'Pending',
+  approved: 'Approved',
+  rejected: 'Rejected',
 }
 
 export default function CorrectionsPage() {
@@ -36,10 +36,10 @@ export default function CorrectionsPage() {
 
   const columns = [
     'Booking Code',
-    ...(canReview ? ['Diajukan Oleh'] : []),
-    'Alasan',
+    ...(canReview ? ['Submitted By'] : []),
+    'Reason',
     'Status',
-    'Tanggal',
+    'Date',
   ]
 
   const { data, isLoading } = useQuery({
@@ -59,11 +59,11 @@ export default function CorrectionsPage() {
     <div className="space-y-6">
       <PageHeader
         icon={ClipboardList}
-        title={canReview ? 'Koreksi' : 'Permintaan Koreksi Saya'}
+        title={canReview ? 'Corrections' : 'My Correction Requests'}
         description={
           canReview
-            ? 'Tinjau dan kelola permintaan koreksi tiket'
-            : 'Lihat status permintaan koreksi yang Anda ajukan'
+            ? 'Review and manage ticket correction requests'
+            : 'View the status of correction requests you have submitted'
         }
       />
 
@@ -75,7 +75,7 @@ export default function CorrectionsPage() {
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Cari booking code / nama..."
+            placeholder="Search booking code / name..."
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1) }}
             className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
@@ -86,10 +86,10 @@ export default function CorrectionsPage() {
           onChange={e => { setStatus(e.target.value); setPage(1) }}
           className="px-3 py-2 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
         >
-          <option value="">Semua Status</option>
-          <option value="pending">Menunggu</option>
-          <option value="approved">Disetujui</option>
-          <option value="rejected">Ditolak</option>
+          <option value="">All Statuses</option>
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
         </select>
       </div>
 
@@ -97,7 +97,7 @@ export default function CorrectionsPage() {
         columns={columns}
         isLoading={isLoading}
         isEmpty={corrections.length === 0}
-        emptyMessage="Tidak ada permintaan koreksi."
+        emptyMessage="No correction requests."
       >
         {corrections.map((item: any) => {
           const statusVal = item.status?.value ?? item.status ?? 'pending'
@@ -124,7 +124,7 @@ export default function CorrectionsPage() {
                 </span>
               </td>
               <td className="px-4 py-3 text-muted-foreground text-xs">
-                {new Date(item.created_at).toLocaleDateString('id-ID')}
+                {new Date(item.created_at).toLocaleDateString('en-GB')}
               </td>
             </tr>
           )
@@ -135,7 +135,7 @@ export default function CorrectionsPage() {
         page={page}
         lastPage={meta.lastPage}
         total={meta.total}
-        label="koreksi"
+        label="corrections"
         onChange={setPage}
       />
     </div>

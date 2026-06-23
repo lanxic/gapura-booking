@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Kasir;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\SendBookingPaidEmail;
 use App\Models\ActivityLog;
 use App\Models\Order;
 use App\Models\Payment;
@@ -80,11 +81,20 @@ class KasirOrderController extends Controller
 
         $newPaid = $paid + $request->amount;
 
-        if ($newPaid >= $order->total) {
+        $isFullyPaid = $newPaid >= $order->total;
+        $isDpFirst   = $order->payment_type === 'down_payment' && $order->status->value === 'pending';
+
+        if ($isFullyPaid) {
             $order->update(['status' => 'paid']);
             $this->ticketService->generateForOrder($order);
-        } elseif ($order->payment_type === 'down_payment' && $order->status->value === 'pending') {
+        } elseif ($isDpFirst) {
             $order->update(['status' => 'dp_paid']);
+        }
+
+        try {
+            SendBookingPaidEmail::dispatch($order->fresh(), $payment);
+        } catch (\Throwable) {
+            // Email failure must not affect payment processing
         }
 
         ActivityLog::create([

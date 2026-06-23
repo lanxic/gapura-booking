@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Auth;
 
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
+use App\Models\Order;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -42,6 +43,8 @@ class AuthController extends Controller
 
         JWTAuth::factory()->setTTL($ttl);
         $token = auth('api')->login($user);
+
+        $this->linkGuestOrders($user);
 
         return $this->respondWithToken($token, $user);
     }
@@ -95,6 +98,8 @@ class AuthController extends Controller
         JWTAuth::factory()->setTTL($ttl);
         $token = auth('api')->login($user);
 
+        $this->linkGuestOrders($user);
+
         return $this->respondWithToken($token, $user, 201);
     }
 
@@ -115,6 +120,13 @@ class AuthController extends Controller
     public function me(): JsonResponse
     {
         return response()->json(['data' => $this->userPayload(auth('api')->user())]);
+    }
+
+    private function linkGuestOrders(User $user): void
+    {
+        Order::where('customer_email', $user->email)
+            ->whereNull('user_id')
+            ->update(['user_id' => $user->id]);
     }
 
     private function respondWithToken(string $token, User $user, int $status = 200): JsonResponse

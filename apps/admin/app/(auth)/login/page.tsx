@@ -36,7 +36,7 @@ export default function LoginPage() {
       document.cookie = `admin_role=${user.role}; path=/; max-age=${maxAge}; samesite=lax`
       router.push('/dashboard')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login gagal. Periksa email dan password.')
+      setError(err instanceof Error ? err.message : 'Login failed. Please check your email and password.')
     } finally {
       setLoading(false)
     }
@@ -50,7 +50,7 @@ export default function LoginPage() {
             <Ticket size={22} className="text-white" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">Amartha eTicket</h1>
-          <p className="text-sm text-muted-foreground mt-1">Masuk ke panel admin</p>
+          <p className="text-sm text-muted-foreground mt-1">Sign in to admin panel</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -96,7 +96,7 @@ export default function LoginPage() {
             className="w-full flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {loading && <Loader2 size={16} className="animate-spin" />}
-            {loading ? 'Memproses...' : 'Masuk'}
+            {loading ? 'Processing...' : 'Sign In'}
           </button>
         </form>
       </div>

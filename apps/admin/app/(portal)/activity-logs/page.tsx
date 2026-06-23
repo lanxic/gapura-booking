@@ -14,7 +14,7 @@ const ROLE_LABELS: Record<string, string> = {
   super_admin: 'Super Admin',
   admin:       'Admin',
   supervisor:  'Supervisor',
-  kasir:       'Kasir',
+  kasir:       'Cashier',
   scanner:     'Scanner',
 }
 
@@ -36,7 +36,7 @@ const ACTION_COLORS: Record<string, string> = {
   reject:  'bg-orange-50 text-orange-700',
 }
 
-const COLUMNS = ['Pengguna', 'Role', 'Aksi', 'Objek', 'Waktu']
+const COLUMNS = ['User', 'Role', 'Action', 'Object', 'Time']
 
 export default function ActivityLogsPage() {
   const token = useAdminAuthStore(s => s.token)
@@ -62,8 +62,8 @@ export default function ActivityLogsPage() {
     <div className="space-y-6">
       <PageHeader
         icon={History}
-        title="Log Aktivitas"
-        description="Rekam jejak aktivitas semua pengguna admin"
+        title="Activity Logs"
+        description="Audit trail of all admin user activities"
       />
 
       {/* Filters */}
@@ -72,7 +72,7 @@ export default function ActivityLogsPage() {
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Cari nama pengguna..."
+            placeholder="Search user name..."
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1) }}
             className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
@@ -83,7 +83,7 @@ export default function ActivityLogsPage() {
           onChange={e => { setRole(e.target.value); setPage(1) }}
           className="px-3 py-2 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
         >
-          <option value="">Semua Role</option>
+          <option value="">All Roles</option>
           {(Object.keys(ROLE_LABELS) as AdminRole[]).map(r => (
             <option key={r} value={r}>{ROLE_LABELS[r]}</option>
           ))}
@@ -93,7 +93,7 @@ export default function ActivityLogsPage() {
           onChange={e => { setAction(e.target.value); setPage(1) }}
           className="px-3 py-2 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
         >
-          <option value="">Semua Aksi</option>
+          <option value="">All Actions</option>
           {Object.keys(ACTION_COLORS).map(a => (
             <option key={a} value={a}>{a}</option>
           ))}
@@ -104,7 +104,7 @@ export default function ActivityLogsPage() {
         columns={COLUMNS}
         isLoading={isLoading}
         isEmpty={logs.length === 0}
-        emptyMessage="Tidak ada log aktivitas."
+        emptyMessage="No activity logs."
         skeletonRows={8}
       >
         {logs.map((log: any) => {
@@ -135,7 +135,7 @@ export default function ActivityLogsPage() {
                 {log.subject_id && <span className="text-xs ml-1 opacity-60">#{log.subject_id}</span>}
               </td>
               <td className="px-4 py-3 text-muted-foreground text-xs whitespace-nowrap">
-                {new Date(log.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}
+                {new Date(log.created_at).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}
               </td>
             </tr>
           )
@@ -146,7 +146,7 @@ export default function ActivityLogsPage() {
         page={page}
         lastPage={meta.lastPage}
         total={meta.total}
-        label="log"
+        label="logs"
         onChange={setPage}
       />
     </div>

@@ -12,16 +12,19 @@ import { cn } from '@/lib/utils'
 
 // ── constants ─────────────────────────────────────────────────────────────────
 
-const DAYS_ID   = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']
+const DAYS_ID   = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const MONTHS_ID = [
-  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
 ]
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 function toYMD(d: Date): string {
-  return d.toISOString().slice(0, 10)
+  const y  = d.getFullYear()
+  const m  = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${dd}`
 }
 
 function getDaysInMonth(year: number, month: number): Date[] {
@@ -106,13 +109,13 @@ function SlotEditRow({ slot, token, onDone }: {
   return (
     <div className="px-4 py-3 space-y-2.5 bg-primary/5">
       <div>
-        <label className="block text-[10px] font-medium text-muted-foreground mb-1">Slot Waktu</label>
+        <label className="block text-[10px] font-medium text-muted-foreground mb-1">Time Slot</label>
         <input type="text" value={form.time_slot}
           onChange={e => setForm(p => ({ ...p, time_slot: e.target.value }))}
-          placeholder="contoh: 09:00" className={INP} />
+          placeholder="e.g. 09:00" className={INP} />
       </div>
       <div>
-        <label className="block text-[10px] font-medium text-muted-foreground mb-1">Total Kuota</label>
+        <label className="block text-[10px] font-medium text-muted-foreground mb-1">Total Quota</label>
         <input type="number" min={1} value={form.total_quota}
           onChange={e => setForm(p => ({ ...p, total_quota: parseInt(e.target.value) || 1 }))}
           className={INP} />
@@ -130,17 +133,17 @@ function SlotEditRow({ slot, token, onDone }: {
               form.is_blocked ? 'translate-x-4' : 'translate-x-0',
             )} />
           </button>
-          <span className="text-xs text-muted-foreground">Blokir</span>
+          <span className="text-xs text-muted-foreground">Block</span>
         </div>
         <div className="flex items-center gap-1.5">
           <button type="button" onClick={onDone}
             className="px-2.5 py-1 text-xs rounded-md border border-border hover:bg-accent transition-colors">
-            Batal
+            Cancel
           </button>
           <button type="button" onClick={() => mutation.mutate()} disabled={mutation.isPending}
             className="px-2.5 py-1 text-xs rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 flex items-center gap-1 transition-colors">
             {mutation.isPending ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />}
-            Simpan
+            Save
           </button>
         </div>
       </div>
@@ -188,12 +191,12 @@ function AddSlotForm({ date, productId, token, onDone }: {
       {!productId && (
         <div>
           <label className="block text-[10px] font-medium text-muted-foreground mb-1">
-            Produk <span className="text-destructive">*</span>
+            Product <span className="text-destructive">*</span>
           </label>
           <select value={form.product_id}
             onChange={e => setForm(p => ({ ...p, product_id: e.target.value }))}
             className={INP}>
-            <option value="">Pilih produk…</option>
+            <option value="">Select product…</option>
             {products.map((p: any) => (
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
@@ -201,14 +204,14 @@ function AddSlotForm({ date, productId, token, onDone }: {
         </div>
       )}
       <div>
-        <label className="block text-[10px] font-medium text-muted-foreground mb-1">Slot Waktu</label>
+        <label className="block text-[10px] font-medium text-muted-foreground mb-1">Time Slot</label>
         <input type="text" value={form.time_slot}
           onChange={e => setForm(p => ({ ...p, time_slot: e.target.value }))}
-          placeholder="contoh: 09:00" className={INP} />
+          placeholder="e.g. 09:00" className={INP} />
       </div>
       <div>
         <label className="block text-[10px] font-medium text-muted-foreground mb-1">
-          Total Kuota <span className="text-destructive">*</span>
+          Total Quota <span className="text-destructive">*</span>
         </label>
         <input type="number" min={1} value={form.total_quota}
           onChange={e => setForm(p => ({ ...p, total_quota: parseInt(e.target.value) || 1 }))}
@@ -227,18 +230,18 @@ function AddSlotForm({ date, productId, token, onDone }: {
               form.is_blocked ? 'translate-x-4' : 'translate-x-0',
             )} />
           </button>
-          <span className="text-xs text-muted-foreground">Blokir</span>
+          <span className="text-xs text-muted-foreground">Block</span>
         </div>
         <div className="flex items-center gap-1.5">
           <button type="button" onClick={onDone}
             className="px-2.5 py-1 text-xs rounded-md border border-border hover:bg-accent transition-colors">
-            Batal
+            Cancel
           </button>
           <button type="button" onClick={() => mutation.mutate()}
             disabled={mutation.isPending || !form.product_id}
             className="px-2.5 py-1 text-xs rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 flex items-center gap-1 transition-colors">
             {mutation.isPending ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />}
-            Tambah
+            Add
           </button>
         </div>
       </div>
@@ -309,8 +312,8 @@ function BulkModal({ token, onClose }: {
     (!hasTimeSlot || !!form.time_slot)
 
   const PRESETS: { key: BulkPreset; label: string }[] = [
-    { key: 'week',   label: 'Seminggu' },
-    { key: 'month',  label: 'Sebulan' },
+    { key: 'week',   label: 'Week' },
+    { key: 'month',  label: 'Month' },
     { key: 'custom', label: 'Custom' },
   ]
 
@@ -322,7 +325,7 @@ function BulkModal({ token, onClose }: {
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div className="flex items-center gap-2">
             <LayoutGrid size={16} className="text-muted-foreground" />
-            <h3 className="text-sm font-semibold text-foreground">Buat Slot Massal</h3>
+            <h3 className="text-sm font-semibold text-foreground">Bulk Create Slots</h3>
           </div>
           <button onClick={onClose}
             className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
@@ -335,25 +338,25 @@ function BulkModal({ token, onClose }: {
           {/* Product */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">
-              Produk <span className="text-destructive">*</span>
+              Product <span className="text-destructive">*</span>
             </label>
             <select value={form.product_id}
               onChange={e => setForm(p => ({ ...p, product_id: e.target.value }))}
               className={INP_LG}>
-              <option value="">Pilih produk…</option>
+              <option value="">Select product…</option>
               {products.map((p: any) => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
             <p className="text-xs text-muted-foreground mt-1">
-              Kuota dikelola per produk — setiap produk punya slot ketersediaan sendiri.
+              Quota is managed per product — each product has its own availability slots.
             </p>
           </div>
 
           {/* Date range */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
-              Rentang Tanggal <span className="text-destructive">*</span>
+              Date Range <span className="text-destructive">*</span>
             </label>
             <div className="flex gap-1 p-1 bg-muted/40 rounded-lg mb-3">
               {PRESETS.map(({ key, label }) => (
@@ -370,13 +373,13 @@ function BulkModal({ token, onClose }: {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Dari</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">From</label>
                 <input type="date" value={form.from}
                   onChange={e => { setPreset('custom'); setForm(p => ({ ...p, from: e.target.value })) }}
                   className={INP_LG} />
               </div>
               <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Sampai</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">To</label>
                 <input type="date" value={form.to}
                   onChange={e => { setPreset('custom'); setForm(p => ({ ...p, to: e.target.value })) }}
                   className={INP_LG} />
@@ -384,14 +387,14 @@ function BulkModal({ token, onClose }: {
             </div>
             {dayCount > 0 && (
               <p className="text-xs text-muted-foreground mt-1.5 tabular-nums">
-                {dayCount} hari akan dibuat/diperbarui
+                {dayCount} days will be created/updated
               </p>
             )}
           </div>
 
           {/* Time slot toggle */}
           <div>
-            <label className="block text-sm font-medium text-foreground mb-2">Slot Waktu</label>
+            <label className="block text-sm font-medium text-foreground mb-2">Time Slot</label>
             <div className="flex gap-1 p-1 bg-muted/40 rounded-lg">
               <button type="button" onClick={() => { setHasTimeSlot(false); setForm(p => ({ ...p, time_slot: '' })) }}
                 className={cn(
@@ -400,7 +403,7 @@ function BulkModal({ token, onClose }: {
                     ? 'bg-background text-foreground shadow-sm border border-border/60'
                     : 'text-muted-foreground hover:text-foreground',
                 )}>
-                Tanpa Slot Waktu
+                No Time Slot
               </button>
               <button type="button" onClick={() => setHasTimeSlot(true)}
                 className={cn(
@@ -409,13 +412,13 @@ function BulkModal({ token, onClose }: {
                     ? 'bg-background text-foreground shadow-sm border border-border/60'
                     : 'text-muted-foreground hover:text-foreground',
                 )}>
-                Dengan Slot Waktu
+                With Time Slot
               </button>
             </div>
             {hasTimeSlot && (
               <input type="text" value={form.time_slot}
                 onChange={e => setForm(p => ({ ...p, time_slot: e.target.value }))}
-                placeholder="contoh: 08:00-17:00"
+                placeholder="e.g. 08:00-17:00"
                 className={cn(INP_LG, 'mt-2')} />
             )}
           </div>
@@ -423,7 +426,7 @@ function BulkModal({ token, onClose }: {
           {/* Quota */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-1">
-              Total Kuota <span className="text-destructive">*</span>
+              Total Quota <span className="text-destructive">*</span>
             </label>
             <input type="number" min={1} value={form.total_quota}
               onChange={e => setForm(p => ({ ...p, total_quota: parseInt(e.target.value) || 1 }))}
@@ -432,7 +435,7 @@ function BulkModal({ token, onClose }: {
 
           {/* Info banner */}
           <div className="text-xs text-blue-700 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 leading-relaxed">
-            Slot yang sudah ada di rentang ini akan diperbarui kuotanya, bukan ditambahkan ulang.
+            Existing slots in this range will have their quota updated, not duplicated.
           </div>
 
           {mutation.isError && (
@@ -440,7 +443,7 @@ function BulkModal({ token, onClose }: {
           )}
           {saved && (
             <p className="text-sm text-emerald-600 flex items-center gap-1.5">
-              <Check size={13} /> Slot berhasil dibuat/diperbarui.
+              <Check size={13} /> Slots created/updated successfully.
             </p>
           )}
         </div>
@@ -449,12 +452,12 @@ function BulkModal({ token, onClose }: {
         <div className="px-5 py-4 border-t border-border bg-muted/20 flex justify-end gap-3">
           <button onClick={onClose}
             className="px-4 py-2 text-sm rounded-lg border border-border hover:bg-accent transition-colors">
-            Tutup
+            Close
           </button>
           <button onClick={() => mutation.mutate()} disabled={mutation.isPending || !canSubmit}
             className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors">
             {mutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-            Buat Slot
+            Create Slots
           </button>
         </div>
       </div>
@@ -511,7 +514,7 @@ function DetailPanel({ selected, agg, productId, token }: {
 
   const allBlocked = !!agg && agg.slots.length > 0 && agg.slots.every(s => s.is_blocked)
 
-  const dateLabel = new Date(selected + 'T00:00:00').toLocaleDateString('id-ID', {
+  const dateLabel = new Date(selected + 'T00:00:00').toLocaleDateString('en-GB', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   })
 
@@ -523,7 +526,7 @@ function DetailPanel({ selected, agg, productId, token }: {
         {agg ? (
           <div className="flex items-center justify-between mt-1">
             <p className="text-sm font-semibold text-foreground">
-              {agg.bookedQty} / {agg.totalQuota} terbooking
+              {agg.bookedQty} / {agg.totalQuota} booked
             </p>
             <span className={cn(
               'text-xs font-bold px-2 py-0.5 rounded-full',
@@ -536,7 +539,7 @@ function DetailPanel({ selected, agg, productId, token }: {
             </span>
           </div>
         ) : (
-          <p className="text-sm font-medium text-muted-foreground mt-0.5">Tidak ada data</p>
+          <p className="text-sm font-medium text-muted-foreground mt-0.5">No data</p>
         )}
       </div>
 
@@ -564,13 +567,13 @@ function DetailPanel({ selected, agg, productId, token }: {
                 <div className="flex items-center gap-1.5 min-w-0">
                   <Clock size={12} className="text-muted-foreground shrink-0" />
                   <span className="text-xs font-medium text-foreground truncate">
-                    {slot.time_slot ?? 'Tanpa slot waktu'}
+                    {slot.time_slot ?? 'No time slot'}
                   </span>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   {slot.is_blocked && (
                     <span className="text-[10px] font-semibold text-red-600 bg-red-100 px-1.5 py-0.5 rounded">
-                      Blokir
+                      Blocked
                     </span>
                   )}
                   <button
@@ -617,7 +620,7 @@ function DetailPanel({ selected, agg, productId, token }: {
         {!agg && (
           <div className="px-4 py-8 text-center">
             <CalendarDays size={28} className="mx-auto mb-2 text-muted-foreground/30" />
-            <p className="text-sm text-muted-foreground">Belum ada slot untuk tanggal ini.</p>
+            <p className="text-sm text-muted-foreground">No slots for this date yet.</p>
           </div>
         )}
       </div>
@@ -637,7 +640,7 @@ function DetailPanel({ selected, agg, productId, token }: {
       {/* Panel footer actions */}
       {confirmReset ? (
         <div className="px-4 py-3 border-t border-border bg-red-50 space-y-2">
-          <p className="text-xs text-red-700 font-medium">Hapus semua slot pada tanggal ini?</p>
+          <p className="text-xs text-red-700 font-medium">Delete all slots on this date?</p>
           {resetMutation.isError && (
             <p className="text-[11px] text-destructive">{(resetMutation.error as Error)?.message}</p>
           )}
@@ -646,7 +649,7 @@ function DetailPanel({ selected, agg, productId, token }: {
               onClick={() => setConfirmReset(false)}
               className="flex-1 py-1.5 text-xs rounded-lg border border-border bg-background hover:bg-accent transition-colors"
             >
-              Batal
+              Cancel
             </button>
             <button
               onClick={() => resetMutation.mutate()}
@@ -654,7 +657,7 @@ function DetailPanel({ selected, agg, productId, token }: {
               className="flex-1 py-1.5 text-xs rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-1.5 transition-colors"
             >
               {resetMutation.isPending ? <Loader2 size={11} className="animate-spin" /> : <Trash2 size={11} />}
-              Ya, Reset
+              Yes, Reset
             </button>
           </div>
         </div>
@@ -677,7 +680,7 @@ function DetailPanel({ selected, agg, productId, token }: {
                   ? <Loader2 size={12} className="animate-spin" />
                   : allBlocked ? <LockOpen size={12} /> : <Ban size={12} />
                 }
-                {allBlocked ? 'Buka Blokir' : 'Blokir'}
+                {allBlocked ? 'Unblock' : 'Block'}
               </button>
             )}
 
@@ -698,7 +701,7 @@ function DetailPanel({ selected, agg, productId, token }: {
               onClick={() => { setShowAdd(true); setEditingId(null); setConfirmReset(false) }}
               className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
             >
-              <Plus size={12} /> Tambah Slot
+              <Plus size={12} /> Add Slot
             </button>
           )}
         </div>
@@ -757,7 +760,7 @@ function BulkResetModal({ token, onClose }: {
     }, { token }),
     onSuccess: (res: any) => {
       qc.invalidateQueries({ queryKey: ['admin-availability-cal'] })
-      setDoneMessage(res?.message ?? 'Slot berhasil direset.')
+      setDoneMessage(res?.message ?? 'Slots reset successfully.')
       setDone(true)
     },
   })
@@ -766,8 +769,8 @@ function BulkResetModal({ token, onClose }: {
   const canSubmit = !!form.from && !!form.to
 
   const PRESETS: { key: BulkPreset; label: string }[] = [
-    { key: 'week',   label: 'Seminggu' },
-    { key: 'month',  label: 'Sebulan' },
+    { key: 'week',   label: 'Week' },
+    { key: 'month',  label: 'Month' },
     { key: 'custom', label: 'Custom' },
   ]
 
@@ -779,7 +782,7 @@ function BulkResetModal({ token, onClose }: {
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div className="flex items-center gap-2">
             <Trash2 size={16} className="text-red-500" />
-            <h3 className="text-sm font-semibold text-foreground">Reset Slot Massal</h3>
+            <h3 className="text-sm font-semibold text-foreground">Bulk Reset Slots</h3>
           </div>
           <button onClick={onClose}
             className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
@@ -791,11 +794,11 @@ function BulkResetModal({ token, onClose }: {
 
           {/* Product */}
           <div>
-            <label className="block text-sm font-medium text-foreground mb-1">Produk</label>
+            <label className="block text-sm font-medium text-foreground mb-1">Product</label>
             <select value={form.product_id}
               onChange={e => { setForm(p => ({ ...p, product_id: e.target.value })); setConfirmed(false) }}
               className={INP_LG}>
-              <option value="all">Semua Produk</option>
+              <option value="all">All Products</option>
               {products.map((p: any) => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
@@ -805,7 +808,7 @@ function BulkResetModal({ token, onClose }: {
           {/* Date range */}
           <div>
             <label className="block text-sm font-medium text-foreground mb-2">
-              Rentang Tanggal <span className="text-destructive">*</span>
+              Date Range <span className="text-destructive">*</span>
             </label>
             <div className="flex gap-1 p-1 bg-muted/40 rounded-lg mb-3">
               {PRESETS.map(({ key, label }) => (
@@ -822,13 +825,13 @@ function BulkResetModal({ token, onClose }: {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Dari</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">From</label>
                 <input type="date" value={form.from}
                   onChange={e => { setPreset('custom'); setConfirmed(false); setForm(p => ({ ...p, from: e.target.value })) }}
                   className={INP_LG} />
               </div>
               <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Sampai</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">To</label>
                 <input type="date" value={form.to}
                   onChange={e => { setPreset('custom'); setConfirmed(false); setForm(p => ({ ...p, to: e.target.value })) }}
                   className={INP_LG} />
@@ -836,14 +839,14 @@ function BulkResetModal({ token, onClose }: {
             </div>
             {dayCount > 0 && (
               <p className="text-xs text-muted-foreground mt-1.5 tabular-nums">
-                {dayCount} hari akan direset
+                {dayCount} days will be reset
               </p>
             )}
           </div>
 
           {/* Warning */}
           <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 leading-relaxed">
-            Semua slot tanpa booking pada rentang ini akan <strong>dihapus permanen</strong>. Slot yang sudah ada booking tidak akan terpengaruh.
+            All unbooked slots in this range will be <strong>permanently deleted</strong>. Slots that already have bookings will not be affected.
           </div>
 
           {/* Confirm checkbox */}
@@ -852,7 +855,7 @@ function BulkResetModal({ token, onClose }: {
               <input type="checkbox" checked={confirmed}
                 onChange={e => setConfirmed(e.target.checked)}
                 className="w-4 h-4 accent-red-600 rounded" />
-              <span className="text-xs text-foreground">Saya mengerti dan ingin melanjutkan reset</span>
+              <span className="text-xs text-foreground">I understand and want to proceed with the reset</span>
             </label>
           )}
 
@@ -870,14 +873,14 @@ function BulkResetModal({ token, onClose }: {
         <div className="px-5 py-4 border-t border-border bg-muted/20 flex justify-end gap-3">
           <button onClick={onClose}
             className="px-4 py-2 text-sm rounded-lg border border-border hover:bg-accent transition-colors">
-            Tutup
+            Close
           </button>
           {!done && (
             <button onClick={() => mutation.mutate()}
               disabled={mutation.isPending || !canSubmit || !confirmed}
               className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 transition-colors">
               {mutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-              Reset Slot
+              Reset Slots
             </button>
           )}
         </div>
@@ -971,8 +974,8 @@ export default function AvailabilityPage() {
         <div className="flex items-center gap-3">
           <CalendarDays size={24} className="text-muted-foreground" />
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Ketersediaan</h1>
-            <p className="text-sm text-muted-foreground">Pantau dan kelola kuota slot per produk</p>
+            <h1 className="text-2xl font-bold text-foreground">Availability</h1>
+            <p className="text-sm text-muted-foreground">Monitor and manage slot quota per product</p>
           </div>
         </div>
 
@@ -982,7 +985,7 @@ export default function AvailabilityPage() {
             onChange={e => { setProductId(e.target.value); setSelected(null) }}
             className="px-3 py-2 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
           >
-            <option value="">Semua Produk</option>
+            <option value="">All Products</option>
             {products.map((p: any) => (
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
@@ -992,14 +995,14 @@ export default function AvailabilityPage() {
             onClick={() => setShowBulkReset(true)}
             className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg border border-red-200 text-red-600 hover:bg-red-50 transition-colors font-medium"
           >
-            <Trash2 size={15} /> Reset Massal
+            <Trash2 size={15} /> Bulk Reset
           </button>
 
           <button
             onClick={() => setShowBulk(true)}
             className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium"
           >
-            <LayoutGrid size={15} /> Buat Massal
+            <LayoutGrid size={15} /> Bulk Create
           </button>
         </div>
       </div>
@@ -1082,7 +1085,7 @@ export default function AvailabilityPage() {
 
                   {agg?.anyBlocked && (
                     <span className="text-[10px] font-semibold text-red-600 bg-red-100 px-1.5 py-0.5 rounded leading-none">
-                      Blokir
+                      Blocked
                     </span>
                   )}
 
@@ -1121,10 +1124,10 @@ export default function AvailabilityPage() {
           {/* Legend */}
           <div className="px-5 py-3 border-t border-border bg-muted/20 flex items-center gap-4 flex-wrap">
             {[
-              { color: 'bg-emerald-500', label: 'Tersedia (< 70%)' },
-              { color: 'bg-amber-400',   label: 'Hampir penuh (70–89%)' },
-              { color: 'bg-orange-400',  label: 'Kritis (90–99%)' },
-              { color: 'bg-red-500',     label: 'Penuh / Blokir' },
+              { color: 'bg-emerald-500', label: 'Available (< 70%)' },
+              { color: 'bg-amber-400',   label: 'Almost full (70–89%)' },
+              { color: 'bg-orange-400',  label: 'Critical (90–99%)' },
+              { color: 'bg-red-500',     label: 'Full / Blocked' },
             ].map(({ color, label }) => (
               <div key={label} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <span className={cn('w-2.5 h-2.5 rounded-sm shrink-0', color)} />

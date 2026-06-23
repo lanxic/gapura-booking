@@ -9,11 +9,11 @@ import { cn } from '@/lib/utils'
 import { OrderDetailModal } from '@/components/shared/OrderDetailModal'
 
 const PAYMENT_STATUS_LABEL: Record<string, string> = {
-  pending:  'Menunggu',
-  success:  'Lunas',
-  failed:   'Gagal',
+  pending:  'Pending',
+  success:  'Paid',
+  failed:   'Failed',
   expired:  'Expired',
-  refunded: 'Dikembalikan',
+  refunded: 'Refunded',
 }
 
 const PAYMENT_STATUS_CLS: Record<string, string> = {
@@ -27,14 +27,14 @@ const PAYMENT_STATUS_CLS: Record<string, string> = {
 // ── Column definitions ────────────────────────────────────────────────────────
 
 const COLUMNS = [
-  { key: 'pending',          label: 'Menunggu',            headerCls: 'bg-amber-50 border-amber-200 text-amber-700',       dotCls: 'bg-amber-400' },
-  { key: 'awaiting_payment', label: 'Menunggu Pembayaran', headerCls: 'bg-orange-50 border-orange-200 text-orange-700',    dotCls: 'bg-orange-400' },
-  { key: 'dp_paid',          label: 'DP Terbayar',         headerCls: 'bg-blue-50 border-blue-200 text-blue-700',          dotCls: 'bg-blue-500' },
-  { key: 'paid',             label: 'Lunas',               headerCls: 'bg-emerald-50 border-emerald-200 text-emerald-700', dotCls: 'bg-emerald-500' },
-  { key: 'confirmed',        label: 'Dikonfirmasi',        headerCls: 'bg-green-50 border-green-200 text-green-700',       dotCls: 'bg-green-500' },
-  { key: 'cancelled',        label: 'Dibatalkan',          headerCls: 'bg-red-50 border-red-200 text-red-700',             dotCls: 'bg-red-400' },
-  { key: 'refunded',         label: 'Dikembalikan',        headerCls: 'bg-gray-50 border-gray-200 text-gray-600',          dotCls: 'bg-gray-400' },
-  { key: 'expired',          label: 'Kedaluwarsa',         headerCls: 'bg-slate-50 border-slate-200 text-slate-500',       dotCls: 'bg-slate-300' },
+  { key: 'pending',          label: 'Pending',          headerCls: 'bg-amber-50 border-amber-200 text-amber-700',       dotCls: 'bg-amber-400' },
+  { key: 'awaiting_payment', label: 'Awaiting Payment', headerCls: 'bg-orange-50 border-orange-200 text-orange-700',    dotCls: 'bg-orange-400' },
+  { key: 'dp_paid',          label: 'Deposit Paid',     headerCls: 'bg-blue-50 border-blue-200 text-blue-700',          dotCls: 'bg-blue-500' },
+  { key: 'paid',             label: 'Paid',             headerCls: 'bg-emerald-50 border-emerald-200 text-emerald-700', dotCls: 'bg-emerald-500' },
+  { key: 'confirmed',        label: 'Confirmed',        headerCls: 'bg-green-50 border-green-200 text-green-700',       dotCls: 'bg-green-500' },
+  { key: 'cancelled',        label: 'Cancelled',        headerCls: 'bg-red-50 border-red-200 text-red-700',             dotCls: 'bg-red-400' },
+  { key: 'refunded',         label: 'Refunded',         headerCls: 'bg-gray-50 border-gray-200 text-gray-600',          dotCls: 'bg-gray-400' },
+  { key: 'expired',          label: 'Expired',          headerCls: 'bg-slate-50 border-slate-200 text-slate-500',       dotCls: 'bg-slate-300' },
 ]
 
 // ── OrderCard ─────────────────────────────────────────────────────────────────
@@ -86,7 +86,7 @@ function OrderCard({ order, statusKey, isDragging, onDragStart, onDragEnd, onSel
 
       <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
         <Calendar size={10} className="shrink-0" />
-        {new Date(order.created_at).toLocaleDateString('id-ID', {
+        {new Date(order.created_at).toLocaleDateString('en-GB', {
           day: 'numeric', month: 'short', year: 'numeric',
         })}
       </div>
@@ -184,7 +184,7 @@ function KanbanColumn({ statusKey, label, headerCls, dotCls, search, token,
                 'flex items-center justify-center py-10 rounded-xl border-2 border-dashed transition-colors duration-150',
                 isDragOver ? 'border-primary/40 text-primary/60' : 'border-border text-muted-foreground/40',
               )}>
-                <span className="text-[11px]">{isDragOver ? 'Lepaskan di sini' : 'Kosong'}</span>
+                <span className="text-[11px]">{isDragOver ? 'Drop here' : 'Empty'}</span>
               </div>
             )
             : orders.map((order: any) => (
@@ -201,7 +201,7 @@ function KanbanColumn({ statusKey, label, headerCls, dotCls, search, token,
         }
         {!isLoading && total > orders.length && (
           <p className="text-[10px] text-center text-muted-foreground pb-1 tabular-nums">
-            +{total - orders.length} pesanan lainnya
+            +{total - orders.length} more orders
           </p>
         )}
       </div>
@@ -260,8 +260,8 @@ export default function OrdersPage() {
         <div className="flex items-center gap-3">
           <ShoppingBag size={24} className="text-muted-foreground" />
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Pesanan</h1>
-            <p className="text-sm text-muted-foreground">Drag kartu untuk mengubah status pesanan</p>
+            <h1 className="text-2xl font-bold text-foreground">Orders</h1>
+            <p className="text-sm text-muted-foreground">Drag cards to change order status</p>
           </div>
         </div>
 
@@ -269,7 +269,7 @@ export default function OrdersPage() {
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Cari booking code / nama / email…"
+            placeholder="Search booking code / name / email…"
             value={searchInput}
             onChange={e => setSearchInput(e.target.value)}
             className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"

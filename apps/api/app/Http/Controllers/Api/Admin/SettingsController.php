@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class SettingsController extends Controller
@@ -111,7 +112,6 @@ class SettingsController extends Controller
     {
         $data = SiteSetting::getCastGroup('payment');
 
-        // Fallback defaults if DB is empty
         if (empty($data)) {
             $data = [
                 'full_payment'     => true,
@@ -121,6 +121,17 @@ class SettingsController extends Controller
                 'cash_enabled'     => true,
             ];
         }
+
+        $midtrans = SiteSetting::getCastGroup('gateway_midtrans');
+        $doku     = SiteSetting::getCastGroup('gateway_doku');
+        $cash     = SiteSetting::getCastGroup('gateway_cash');
+        $snapUrl  = config('services.midtrans.snap_url', 'https://app.sandbox.midtrans.com/snap/snap.js');
+
+        // Gateway enabled state is authoritative from gateway_* groups
+        $data['midtrans_enabled']  = filter_var($midtrans['enabled'] ?? $data['midtrans_enabled'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $data['doku_enabled']      = filter_var($doku['enabled']     ?? false, FILTER_VALIDATE_BOOLEAN);
+        $data['cash_enabled']      = filter_var($cash['enabled']     ?? $data['cash_enabled']     ?? false, FILTER_VALIDATE_BOOLEAN);
+        $data['midtrans_snap_url'] = $snapUrl;
 
         return response()->json(['data' => $data]);
     }
@@ -650,12 +661,23 @@ class SettingsController extends Controller
     {
         $request->validate(['file' => 'required|image|max:5120']);
 
-        $result = $this->cloudinary->uploadImage($request->file('file'), 'amartha/hero');
+        try {
+            $result = $this->cloudinary->uploadImage($request->file('file'), 'amartha/hero');
 
-        return response()->json(['data' => [
-            'image_url' => $result['secure_url'],
-            'image_id'  => $result['public_id'],
-        ]]);
+            return response()->json(['data' => [
+                'image_url' => $result['secure_url'],
+                'image_id'  => $result['public_id'],
+            ]]);
+        } catch (\Throwable) {
+            // Cloudinary not configured or unavailable — fall back to local public storage
+            $path = $request->file('file')->store('hero', 'public');
+            $url  = Storage::disk('public')->url($path);
+
+            return response()->json(['data' => [
+                'image_url' => $url,
+                'image_id'  => $path,
+            ]]);
+        }
     }
 
     // ── Legal ────────────────────────────────────────────────────────────────

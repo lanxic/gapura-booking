@@ -3,9 +3,11 @@
 namespace App\Services;
 
 use App\Enums\OrderStatus;
+use App\Jobs\SendBookingConfirmationEmail;
 use App\Models\AvailabilitySlot;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\ProductVariant;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Str;
@@ -17,16 +19,52 @@ class BookingService
     public function createOrder(array $data): Order
     {
         return DB::transaction(function () use ($data) {
-            $slot = AvailabilitySlot::lockForUpdate()->findOrFail($data['slot_id']);
+            $subtotal       = 0;
+            $processedItems = [];
 
-            $totalQty  = ($data['qty_adult'] ?? 0) + ($data['qty_child'] ?? 0);
-            $available = $slot->total_quota - $slot->booked_qty;
+            foreach ($data['items'] as $item) {
+                $variant = ProductVariant::findOrFail($item['variant_id']);
 
-            if ($slot->is_blocked || $available < $totalQty) {
-                throw new \RuntimeException('Slot tidak tersedia atau kuota habis.');
+                // Use item-level slot_id if provided and numeric, otherwise find all-day slot
+                $slotId = $item['slot_id'] ?? null;
+                if ($slotId && is_numeric($slotId)) {
+                    $slot = AvailabilitySlot::lockForUpdate()->find($slotId);
+                    if (! $slot) {
+                        throw new \RuntimeException('Slot tidak ditemukan.');
+                    }
+                } else {
+                    // Prefer all-day slot (time_slot IS NULL); if none, use first time-specific slot
+                    $slot = AvailabilitySlot::lockForUpdate()
+                        ->where('product_id', $variant->product_id)
+                        ->whereDate('date', $data['date'])
+                        ->orderByRaw('(time_slot IS NULL) DESC')
+                        ->first();
+                    if (! $slot) {
+                        throw new \RuntimeException('Tidak ada slot tersedia untuk tanggal yang dipilih.');
+                    }
+                }
+
+                $qtyAdult = (int) ($item['qty_adult'] ?? 0);
+                $qtyChild = (int) ($item['qty_child'] ?? 0);
+                $totalQty = $qtyAdult + $qtyChild;
+                $available = $slot->total_quota - $slot->booked_qty;
+
+                if ($slot->is_blocked || $available < $totalQty) {
+                    throw new \RuntimeException('Slot tidak tersedia atau kuota habis.');
+                }
+
+                $itemSubtotal = ($qtyAdult * $variant->price_adult) + ($qtyChild * $variant->price_child);
+                $subtotal    += $itemSubtotal;
+
+                $processedItems[] = [
+                    'variant'   => $variant,
+                    'slot'      => $slot,
+                    'qty_adult' => $qtyAdult,
+                    'qty_child' => $qtyChild,
+                    'subtotal'  => $itemSubtotal,
+                ];
             }
 
-            $subtotal        = $this->calculateSubtotal($data);
             $discount        = 0;
             $total           = $subtotal;
             $dpAmount        = null;
@@ -54,31 +92,34 @@ class BookingService
                 'expires_at'       => now()->addSeconds(config('app.seat_hold_ttl', 600)),
             ]);
 
-            OrderItem::create([
-                'order_id'         => $order->id,
-                'variant_id'       => $data['variant_id'],
-                'slot_id'          => $slot->id,
-                'qty_adult'        => $data['qty_adult'] ?? 0,
-                'qty_child'        => $data['qty_child'] ?? 0,
-                'unit_price_adult' => $data['unit_price_adult'],
-                'unit_price_child' => $data['unit_price_child'] ?? 0,
-                'subtotal'         => $subtotal,
-            ]);
+            foreach ($processedItems as $pi) {
+                OrderItem::create([
+                    'order_id'         => $order->id,
+                    'variant_id'       => $pi['variant']->id,
+                    'slot_id'          => $pi['slot']->id,
+                    'qty_adult'        => $pi['qty_adult'],
+                    'qty_child'        => $pi['qty_child'],
+                    'unit_price_adult' => $pi['variant']->price_adult,
+                    'unit_price_child' => $pi['variant']->price_child,
+                    'subtotal'         => $pi['subtotal'],
+                ]);
 
-            $slot->increment('booked_qty', $totalQty);
+                $pi['slot']->increment('booked_qty', $pi['qty_adult'] + $pi['qty_child']);
+            }
 
             $ttl = config('app.seat_hold_ttl', 600);
             Redis::setex("seat_hold:{$order->id}", $ttl, $order->id);
+
+            try {
+                SendBookingConfirmationEmail::dispatch($order);
+            } catch (\Throwable) {
+                // Email failure must not abort the booking
+            }
 
             return $order;
         });
     }
 
-    /**
-     * Hasilkan invoice number baru untuk satu transaksi Midtrans.
-     * Format: INV-YYYYMMDD-XXXXXXXX
-     * Unik per payment, dikirim ke Midtrans sebagai order_id.
-     */
     public static function generateInvoiceNumber(): string
     {
         do {
@@ -88,11 +129,6 @@ class BookingService
         return $candidate;
     }
 
-    /**
-     * Hasilkan booking code customer-facing.
-     * Format: AMT-XXXXXXXX (8 alphanum, huruf kapital)
-     * Digunakan customer untuk tracking pesanan, TIDAK dikirim ke Midtrans.
-     */
     public static function generateBookingCode(): string
     {
         do {
@@ -100,15 +136,5 @@ class BookingService
         } while (DB::table('orders')->where('booking_code', $candidate)->exists());
 
         return $candidate;
-    }
-
-    private function calculateSubtotal(array $data): int
-    {
-        $adultTotal = ($data['qty_adult'] ?? 0) * ($data['unit_price_adult'] ?? 0);
-        $childTotal = ($data['qty_child'] ?? 0) * ($data['unit_price_child'] ?? 0);
-        $addonTotal = collect($data['addons'] ?? [])
-            ->sum(fn($a) => $a['qty'] * $a['unit_price']);
-
-        return $adultTotal + $childTotal + $addonTotal;
     }
 }

@@ -29,8 +29,8 @@ export default function ReportsPage() {
       <div className="flex items-center gap-3">
         <BarChart2 size={24} className="text-muted-foreground" />
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Laporan Penjualan</h1>
-          <p className="text-sm text-muted-foreground">Ringkasan pendapatan dan pesanan berdasarkan rentang tanggal</p>
+          <h1 className="text-2xl font-bold text-foreground">Sales Report</h1>
+          <p className="text-sm text-muted-foreground">Revenue and order summary for the selected date range</p>
         </div>
       </div>
 
@@ -39,19 +39,19 @@ export default function ReportsPage() {
       {/* Summary Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <SummaryCard
-          label="Total Pendapatan"
+          label="Total Revenue"
           icon={Banknote}
           color="text-emerald-600"
           bg="bg-emerald-50"
           isLoading={isLoading}
           value={
             summary.total_revenue != null
-              ? `Rp ${Number(summary.total_revenue).toLocaleString('id-ID')}`
+              ? `Rp ${Number(summary.total_revenue).toLocaleString('en-ID')}`
               : '—'
           }
         />
         <SummaryCard
-          label="Total Pesanan"
+          label="Total Orders"
           icon={ShoppingBag}
           color="text-blue-600"
           bg="bg-blue-50"
@@ -59,14 +59,14 @@ export default function ReportsPage() {
           value={summary.total_orders != null ? String(summary.total_orders) : '—'}
         />
         <SummaryCard
-          label="Rata-rata per Pesanan"
+          label="Average per Order"
           icon={TrendingUp}
           color="text-violet-600"
           bg="bg-violet-50"
           isLoading={isLoading}
           value={
             summary.total_revenue != null && summary.total_orders > 0
-              ? `Rp ${Math.round(summary.total_revenue / summary.total_orders).toLocaleString('id-ID')}`
+              ? `Rp ${Math.round(summary.total_revenue / summary.total_orders).toLocaleString('en-ID')}`
               : '—'
           }
         />
@@ -75,14 +75,14 @@ export default function ReportsPage() {
       {/* Daily Table */}
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="px-4 py-3 border-b border-border bg-muted/30">
-          <h2 className="text-sm font-semibold text-foreground">Rincian Harian</h2>
+          <h2 className="text-sm font-semibold text-foreground">Daily Breakdown</h2>
         </div>
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border bg-muted/10">
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Tanggal</th>
-              <th className="text-right px-4 py-3 font-medium text-muted-foreground">Jumlah Pesanan</th>
-              <th className="text-right px-4 py-3 font-medium text-muted-foreground">Pendapatan</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground">Date</th>
+              <th className="text-right px-4 py-3 font-medium text-muted-foreground">Orders</th>
+              <th className="text-right px-4 py-3 font-medium text-muted-foreground">Revenue</th>
             </tr>
           </thead>
           <tbody>
@@ -99,7 +99,7 @@ export default function ReportsPage() {
             ) : daily.length === 0 ? (
               <tr>
                 <td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">
-                  Tidak ada data untuk rentang tanggal ini.
+                  No data for this date range.
                 </td>
               </tr>
             ) : daily.map((row: any, i: number) => (
@@ -108,7 +108,7 @@ export default function ReportsPage() {
                 className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors"
               >
                 <td className="px-4 py-3 text-muted-foreground">
-                  {new Date(row.date).toLocaleDateString('id-ID', {
+                  {new Date(row.date).toLocaleDateString('en-GB', {
                     weekday: 'short',
                     day: 'numeric',
                     month: 'short',

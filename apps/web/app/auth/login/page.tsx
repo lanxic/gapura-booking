@@ -12,8 +12,8 @@ import { Loader2, AlertCircle, Eye, EyeOff } from 'lucide-react'
 import { useState } from 'react'
 
 const schema = z.object({
-  email: z.string().email('Email tidak valid'),
-  password: z.string().min(6, 'Password minimal 6 karakter'),
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -41,7 +41,7 @@ export default function LoginPage() {
 
   const login = useMutation({
     mutationFn: (values: FormValues) =>
-      api.postSnake<LoginResponse>('/auth/login', values),
+      api.postSnake<LoginResponse>('/auth/customer/login', values),
     onSuccess: (res) => {
       auth.setAuth(res.data.user, res.data.token)
       router.push(redirect)
@@ -54,11 +54,11 @@ export default function LoginPage() {
         {/* Logo / Brand */}
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-emerald-700 mb-1">Amartha eTicket</h1>
-          <p className="text-gray-500 text-sm">Masuk untuk melanjutkan</p>
+          <p className="text-gray-500 text-sm">Sign in to continue</p>
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900 mb-5">Masuk ke Akun</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-5">Sign In</h2>
 
           <form onSubmit={handleSubmit((v) => login.mutate(v))} className="space-y-4">
             <div>
@@ -68,7 +68,7 @@ export default function LoginPage() {
               <input
                 {...register('email')}
                 type="email"
-                placeholder="email@contoh.com"
+                placeholder="email@example.com"
                 autoComplete="email"
                 className={cn(
                   'w-full px-3 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500',
@@ -88,7 +88,7 @@ export default function LoginPage() {
                 <input
                   {...register('password')}
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Masukkan password"
+                  placeholder="Enter your password"
                   autoComplete="current-password"
                   className={cn(
                     'w-full px-3 py-2.5 pr-10 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500',
@@ -112,7 +112,7 @@ export default function LoginPage() {
               <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
                 <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                 <span>
-                  {(login.error as Error)?.message ?? 'Email atau password salah.'}
+                  {(login.error as Error)?.message ?? 'Incorrect email or password.'}
                 </span>
               </div>
             )}
@@ -129,21 +129,21 @@ export default function LoginPage() {
             >
               {login.isPending ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" /> Masuk...
+                  <Loader2 className="w-4 h-4 animate-spin" /> Signing in...
                 </>
               ) : (
-                'Masuk'
+                'Sign In'
               )}
             </button>
           </form>
 
           <p className="text-center text-sm text-gray-500 mt-5">
-            Belum punya akun?{' '}
+            Don&apos;t have an account?{' '}
             <a
               href={`/auth/register${redirect !== '/account' ? `?redirect=${redirect}` : ''}`}
               className="font-medium text-emerald-700 hover:underline"
             >
-              Daftar sekarang
+              Register now
             </a>
           </p>
         </div>

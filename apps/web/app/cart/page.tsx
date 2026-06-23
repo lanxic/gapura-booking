@@ -16,16 +16,16 @@ export default function CartPage() {
   if (cart.tickets.length === 0) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-20 text-center text-gray-500">
-        <p className="text-lg font-medium">Keranjang kamu kosong.</p>
-        <Link href="/products" className="text-emerald-600 hover:underline text-sm mt-2 inline-block">
-          Lihat produk wisata
+        <p className="text-lg font-medium">Your cart is empty.</p>
+        <Link href="/" className="text-emerald-600 hover:underline text-sm mt-2 inline-block">
+          Browse products
         </Link>
       </div>
     )
   }
 
   const visitDate = cart.selectedDate
-    ? new Date(cart.selectedDate + 'T00:00:00').toLocaleDateString('id-ID', {
+    ? new Date(cart.selectedDate + 'T00:00:00').toLocaleDateString('en-GB', {
         day: 'numeric', month: 'long', year: 'numeric',
       })
     : null
@@ -33,9 +33,9 @@ export default function CartPage() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Keranjang Saya</h1>
+        <h1 className="text-2xl font-bold text-gray-900">My Cart</h1>
         <Link href="/" className="text-sm text-gray-500 border border-gray-300 px-4 py-1.5 rounded-lg hover:bg-gray-50 transition-colors">
-          Kembali Ke Beranda
+          Back to Home
         </Link>
       </div>
 
@@ -55,7 +55,7 @@ export default function CartPage() {
 
                     <div className="mt-3 space-y-1 text-sm text-gray-600">
                       <p>
-                        <span className="font-medium">Kuantitas:</span>
+                        <span className="font-medium">Quantity:</span>
                       </p>
                       {ticket.qtyAdult > 0 && (
                         <p>{ticket.qtyAdult} X ADULT</p>
@@ -65,7 +65,7 @@ export default function CartPage() {
                       )}
                       {visitDate && (
                         <p>
-                          <span className="font-medium">Tanggal Kunjungan:</span>
+                          <span className="font-medium">Visit Date:</span>
                           <br />{visitDate}
                         </p>
                       )}
@@ -77,7 +77,7 @@ export default function CartPage() {
                   <button
                     onClick={() => cart.removeTicket(ticket.variantId)}
                     className="text-gray-400 hover:text-red-500 transition-colors"
-                    title="Hapus dari keranjang"
+                    title="Remove from cart"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -91,15 +91,15 @@ export default function CartPage() {
         {/* Summary */}
         <div className="lg:col-span-1">
           <div className="bg-white border border-gray-200 rounded-xl p-5 sticky top-20">
-            <h2 className="font-semibold text-gray-800 mb-4">Ringkasan</h2>
+            <h2 className="font-semibold text-gray-800 mb-4">Summary</h2>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between text-gray-600">
-                <span>Sub Total ({cart.tickets.length} barang)</span>
+                <span>Subtotal ({cart.tickets.length} item{cart.tickets.length !== 1 ? 's' : ''})</span>
                 <span>{formatRupiah(subtotal)}</span>
               </div>
               {cart.voucher && (
                 <div className="flex justify-between text-emerald-600">
-                  <span>Diskon</span>
+                  <span>Discount</span>
                   <span>-{formatRupiah(cart.voucher.discount)}</span>
                 </div>
               )}
@@ -118,13 +118,13 @@ export default function CartPage() {
           onClick={() => router.back()}
           className="px-6 py-2.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
         >
-          Kembali
+          Back
         </button>
         <button
           onClick={() => router.push('/checkout')}
           className="px-8 py-2.5 rounded-lg bg-emerald-700 text-white text-sm font-semibold hover:bg-emerald-800 transition-colors"
         >
-          Langkah Berikutnya
+          Next Step
         </button>
       </div>
     </div>

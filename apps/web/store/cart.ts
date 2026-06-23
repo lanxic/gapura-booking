@@ -4,6 +4,7 @@ import { persist } from 'zustand/middleware'
 export type AddonItem = { addonId: string; qty: number; unitPrice: number }
 
 export type TicketSelection = {
+  productId: string
   variantId: string
   variantLabel: string
   qtyAdult: number

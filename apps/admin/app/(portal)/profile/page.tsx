@@ -10,7 +10,7 @@ const ROLE_LABELS: Record<AdminRole, string> = {
   super_admin: 'Super Admin',
   admin:       'Admin',
   supervisor:  'Supervisor',
-  kasir:       'Kasir',
+  kasir:       'Cashier',
   scanner:     'Scanner',
 }
 
@@ -54,7 +54,7 @@ export default function ProfilePage() {
       setAuth({ ...user, name }, token!)
       setInfoSuccess(true)
     } catch (err) {
-      setInfoError(err instanceof Error ? err.message : 'Gagal menyimpan profil.')
+      setInfoError(err instanceof Error ? err.message : 'Failed to save profile.')
     } finally {
       setInfoSaving(false)
     }
@@ -66,11 +66,11 @@ export default function ProfilePage() {
     setSecSuccess(false)
 
     if (newPassword !== confirmPassword) {
-      setSecError('Password baru tidak cocok.')
+      setSecError('New passwords do not match.')
       return
     }
     if (newPassword.length < 8) {
-      setSecError('Password baru minimal 8 karakter.')
+      setSecError('New password must be at least 8 characters.')
       return
     }
 
@@ -85,7 +85,7 @@ export default function ProfilePage() {
       setNewPassword('')
       setConfirmPassword('')
     } catch (err) {
-      setSecError(err instanceof Error ? err.message : 'Gagal mengubah password.')
+      setSecError(err instanceof Error ? err.message : 'Failed to change password.')
     } finally {
       setSecSaving(false)
     }
@@ -95,12 +95,12 @@ export default function ProfilePage() {
     <div className="max-w-2xl space-y-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
-        <span>Akun</span>
+        <span>Account</span>
         <span>›</span>
-        <span className="text-foreground font-medium">Profil Saya</span>
+        <span className="text-foreground font-medium">My Profile</span>
       </nav>
 
-      <h1 className="text-2xl font-bold text-foreground -mt-2">Profil Saya</h1>
+      <h1 className="text-2xl font-bold text-foreground -mt-2">My Profile</h1>
 
       {/* Avatar + Identity Card */}
       <div className="rounded-xl border border-border bg-card p-5 flex items-center gap-5">
@@ -115,11 +115,11 @@ export default function ProfilePage() {
           </div>
           <button
             type="button"
-            title="Ganti avatar"
+            title="Change avatar"
             className="absolute inset-0 rounded-full bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
           >
             <Camera size={18} className="text-white" />
-            <span className="text-white text-[10px] font-medium mt-0.5">Ganti avatar</span>
+            <span className="text-white text-[10px] font-medium mt-0.5">Change avatar</span>
           </button>
         </div>
 
@@ -144,7 +144,7 @@ export default function ProfilePage() {
           )}
         >
           <UserCircle size={15} />
-          Informasi Profil
+          Profile Information
         </button>
         <button
           onClick={() => setTab('security')}
@@ -156,22 +156,22 @@ export default function ProfilePage() {
           )}
         >
           <KeyRound size={15} />
-          Keamanan
+          Security
         </button>
       </div>
 
       {/* Tab: Informasi Profil */}
       {tab === 'info' && (
         <div className="rounded-xl border border-border bg-card p-6">
-          <h2 className="text-base font-semibold text-foreground">Informasi Profil</h2>
+          <h2 className="text-base font-semibold text-foreground">Profile Information</h2>
           <p className="text-sm text-muted-foreground mt-0.5 mb-6">
-            Perbarui nama tampilan, bio, dan foto profil Anda.
+            Update your display name, bio, and profile picture.
           </p>
 
           <form onSubmit={handleSaveInfo} className="space-y-5">
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">
-                Nama Lengkap
+                Full Name
               </label>
               <input
                 type="text"
@@ -190,7 +190,7 @@ export default function ProfilePage() {
                 readOnly
                 className="w-full rounded-lg border border-input bg-muted px-3 py-2 text-sm text-muted-foreground cursor-not-allowed"
               />
-              <p className="mt-1 text-xs text-muted-foreground">Email tidak dapat diubah.</p>
+              <p className="mt-1 text-xs text-muted-foreground">Email cannot be changed.</p>
             </div>
 
             <div>
@@ -199,7 +199,7 @@ export default function ProfilePage() {
                 value={bio}
                 onChange={e => setBio(e.target.value.slice(0, 500))}
                 rows={4}
-                placeholder="Ceritakan sedikit tentang diri Anda..."
+                placeholder="Tell us a little about yourself..."
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition resize-none"
               />
               <p className="text-right text-xs text-muted-foreground mt-1">{bio.length}/500</p>
@@ -211,7 +211,7 @@ export default function ProfilePage() {
                 type="text"
                 value={avatarUrl}
                 onChange={e => setAvatarUrl(e.target.value)}
-                placeholder="https://... atau upload dengan klik foto di atas"
+                placeholder="https://... or upload by clicking the photo above"
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition"
               />
             </div>
@@ -223,7 +223,7 @@ export default function ProfilePage() {
             )}
             {infoSuccess && (
               <div className="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 rounded-lg px-3 py-2">
-                <CheckCircle size={15} /> Profil berhasil disimpan.
+                <CheckCircle size={15} /> Profile saved successfully.
               </div>
             )}
 
@@ -234,7 +234,7 @@ export default function ProfilePage() {
                 className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {infoSaving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
-                {infoSaving ? 'Menyimpan...' : 'Simpan Profil'}
+                {infoSaving ? 'Saving...' : 'Save Profile'}
               </button>
             </div>
           </form>
@@ -244,15 +244,15 @@ export default function ProfilePage() {
       {/* Tab: Keamanan */}
       {tab === 'security' && (
         <div className="rounded-xl border border-border bg-card p-6">
-          <h2 className="text-base font-semibold text-foreground">Keamanan</h2>
+          <h2 className="text-base font-semibold text-foreground">Security</h2>
           <p className="text-sm text-muted-foreground mt-0.5 mb-6">
-            Ubah password untuk menjaga keamanan akun Anda.
+            Change your password to keep your account secure.
           </p>
 
           <form onSubmit={handleSaveSecurity} className="space-y-5">
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">
-                Password Saat Ini
+                Current Password
               </label>
               <input
                 type="password"
@@ -266,7 +266,7 @@ export default function ProfilePage() {
 
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">
-                Password Baru
+                New Password
               </label>
               <input
                 type="password"
@@ -274,21 +274,21 @@ export default function ProfilePage() {
                 onChange={e => setNewPassword(e.target.value)}
                 required
                 minLength={8}
-                placeholder="Min. 8 karakter"
+                placeholder="Min. 8 characters"
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring transition"
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">
-                Konfirmasi Password Baru
+                Confirm New Password
               </label>
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
                 required
-                placeholder="Ulangi password baru"
+                placeholder="Repeat new password"
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring transition"
               />
             </div>
@@ -300,7 +300,7 @@ export default function ProfilePage() {
             )}
             {secSuccess && (
               <div className="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 rounded-lg px-3 py-2">
-                <CheckCircle size={15} /> Password berhasil diubah.
+                <CheckCircle size={15} /> Password changed successfully.
               </div>
             )}
 
@@ -311,7 +311,7 @@ export default function ProfilePage() {
                 className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {secSaving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
-                {secSaving ? 'Menyimpan...' : 'Simpan Password'}
+                {secSaving ? 'Saving...' : 'Save Password'}
               </button>
             </div>
           </form>

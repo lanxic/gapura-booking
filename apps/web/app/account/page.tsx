@@ -21,14 +21,14 @@ import {
 
 function statusLabel(status: string): string {
   const labels: Record<string, string> = {
-    pending: 'Menunggu',
-    awaiting_payment: 'Menunggu Pembayaran',
-    dp_paid: 'DP Terbayar',
-    paid: 'Lunas',
-    confirmed: 'Terkonfirmasi',
-    cancelled: 'Dibatalkan',
-    refunded: 'Dikembalikan',
-    expired: 'Kadaluarsa',
+    pending: 'Pending',
+    awaiting_payment: 'Awaiting Payment',
+    dp_paid: 'Deposit Paid',
+    paid: 'Paid',
+    confirmed: 'Confirmed',
+    cancelled: 'Cancelled',
+    refunded: 'Refunded',
+    expired: 'Expired',
   }
   return labels[status] ?? status
 }
@@ -101,7 +101,7 @@ export default function AccountPage() {
             <User className="w-6 h-6 text-emerald-700" />
           </div>
           <div>
-            <p className="font-semibold text-gray-900">{auth.user?.name ?? 'Pelanggan'}</p>
+            <p className="font-semibold text-gray-900">{auth.user?.name ?? 'Customer'}</p>
             <p className="text-sm text-gray-500">{auth.user?.email ?? ''}</p>
           </div>
         </div>
@@ -110,7 +110,7 @@ export default function AccountPage() {
           className="flex items-center gap-1.5 text-sm text-red-500 hover:text-red-700 transition-colors"
         >
           <LogOut className="w-4 h-4" />
-          <span>Keluar</span>
+          <span>Log Out</span>
         </button>
       </div>
 
@@ -118,7 +118,7 @@ export default function AccountPage() {
       <div>
         <div className="flex items-center gap-2 mb-4">
           <Package className="w-5 h-5 text-gray-600" />
-          <h2 className="text-lg font-semibold text-gray-900">Pesanan Saya</h2>
+          <h2 className="text-lg font-semibold text-gray-900">My Orders</h2>
         </div>
 
         {isLoading && (
@@ -142,23 +142,23 @@ export default function AccountPage() {
         {isError && (
           <div className="text-center py-12 text-gray-500">
             <AlertCircle className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-            <p className="font-medium">Gagal memuat pesanan.</p>
-            <p className="text-sm mt-1">Silakan coba lagi nanti.</p>
+            <p className="font-medium">Failed to load orders.</p>
+            <p className="text-sm mt-1">Please try again later.</p>
           </div>
         )}
 
         {!isLoading && !isError && orders.length === 0 && (
           <div className="text-center py-16 bg-white rounded-2xl border border-gray-100">
             <Package className="w-10 h-10 mx-auto mb-3 text-gray-300" />
-            <p className="font-medium text-gray-600">Belum ada pesanan</p>
+            <p className="font-medium text-gray-600">No orders yet</p>
             <p className="text-sm text-gray-400 mt-1">
-              Yuk, buat pesanan pertamamu!
+              Make your first booking today!
             </p>
             <Link
-              href="/products"
+              href="/"
               className="mt-4 inline-block bg-emerald-600 text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-emerald-700 transition-colors"
             >
-              Lihat Produk
+              Browse Products
             </Link>
           </div>
         )}
@@ -196,7 +196,7 @@ export default function AccountPage() {
                     <p className="font-semibold text-gray-800">{formatRupiah(order.total)}</p>
                     {order.paymentType === 'down_payment' && (
                       <p className="text-xs text-amber-600">
-                        Sisa: {formatRupiah(order.remainingAmount)}
+                        Remaining: {formatRupiah(order.remainingAmount)}
                       </p>
                     )}
                   </div>

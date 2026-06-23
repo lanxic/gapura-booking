@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Public;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\SendBookingPaidEmail;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Services\BookingService;
@@ -358,13 +359,21 @@ class PaymentController extends Controller
      */
     private function handleSuccessfulPayment(Order $order): void
     {
-        $successCount = $order->payments()->where('status', 'success')->count();
-        $isDpPaid     = $order->payment_type === 'down_payment' && $successCount === 1;
+        $successPayments = $order->payments()->where('status', 'success')->get();
+        $isDpPaid        = $order->payment_type === 'down_payment' && $successPayments->count() === 1;
 
         $order->update(['status' => $isDpPaid ? 'dp_paid' : 'paid']);
 
         if (! $isDpPaid) {
             $this->ticketService->generateForOrder($order);
+        }
+
+        $latestPayment = $successPayments->sortByDesc('paid_at')->first();
+
+        try {
+            SendBookingPaidEmail::dispatch($order->fresh(), $latestPayment);
+        } catch (\Throwable) {
+            // Email failure must not affect payment processing
         }
     }
 

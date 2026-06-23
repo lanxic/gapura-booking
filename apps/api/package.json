@@ -3,6 +3,6 @@
     "name": "api",
     "private": true,
     "scripts": {
-        "dev": "php artisan serve"
+        "dev": "php -c php.ini artisan serve"
     }
 }

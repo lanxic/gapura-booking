@@ -25,44 +25,44 @@ type NavGroup = {
 
 const navGroups: NavGroup[] = [
   {
-    label: 'Ikhtisar',
+    label: 'Overview',
     items: [
-      { href: '/dashboard', label: 'Dasbor', icon: LayoutDashboard },
+      { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     ],
   },
   {
-    label: 'Operasional',
+    label: 'Operations',
     items: [
-      { href: '/products',     label: 'Produk',       icon: Ticket,       permissions: ['products.manage'] },
-      { href: '/availability', label: 'Ketersediaan', icon: CalendarDays,  permissions: ['availability.manage'] },
-      { href: '/orders',       label: 'Pesanan',      icon: ShoppingBag,   permissions: ['orders.view', 'orders.manage'] },
+      { href: '/products',     label: 'Products',     icon: Ticket,       permissions: ['products.manage'] },
+      { href: '/availability', label: 'Availability', icon: CalendarDays,  permissions: ['availability.manage'] },
+      { href: '/orders',       label: 'Orders',       icon: ShoppingBag,   permissions: ['orders.view', 'orders.manage'] },
     ],
   },
   {
-    label: 'Keuangan',
+    label: 'Finance',
     items: [
-      { href: '/vouchers', label: 'Voucher', icon: Percent,   permissions: ['vouchers.manage'] },
-      { href: '/reports',  label: 'Laporan', icon: BarChart2, permissions: ['reports.view', 'reports.export'] },
+      { href: '/vouchers', label: 'Vouchers', icon: Percent,   permissions: ['vouchers.manage'] },
+      { href: '/reports',  label: 'Reports',  icon: BarChart2, permissions: ['reports.view', 'reports.export'] },
     ],
   },
   {
-    label: 'Koreksi',
+    label: 'Corrections',
     items: [
-      { href: '/corrections', label: 'Koreksi', icon: ClipboardList, permissions: ['corrections.submit', 'corrections.review'] },
+      { href: '/corrections', label: 'Corrections', icon: ClipboardList, permissions: ['corrections.submit', 'corrections.review'] },
     ],
   },
   {
-    label: 'Pengaturan',
+    label: 'Settings',
     items: [
-      { href: '/users',         label: 'Pengguna',      icon: Users,    permissions: ['users.manage'] },
+      { href: '/users',         label: 'Users',          icon: Users,    permissions: ['users.manage'] },
       {
-        label: 'Pengaturan', icon: Settings, permissions: ['settings.manage'],
+        label: 'Settings', icon: Settings, permissions: ['settings.manage'],
         children: [
           { href: '/settings/general', label: 'General', icon: SlidersHorizontal },
           { href: '/settings/legal',   label: 'Legal',   icon: Scale },
         ],
       },
-      { href: '/activity-logs', label: 'Log Aktivitas', icon: History,  permissions: ['activity_logs.view', 'activity_logs.export'] },
+      { href: '/activity-logs', label: 'Activity Logs', icon: History,  permissions: ['activity_logs.view', 'activity_logs.export'] },
     ],
   },
 ]
@@ -71,7 +71,7 @@ const ROLE_LABELS: Record<AdminRole, string> = {
   super_admin: 'Super Admin',
   admin: 'Admin',
   supervisor: 'Supervisor',
-  kasir: 'Kasir',
+  kasir: 'Cashier',
   scanner: 'Scanner',
 }
 
@@ -214,14 +214,14 @@ function UserMenu({ user, onLogout, isCollapsed }: {
             onClick={() => setOpen(false)}
             className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent transition-colors"
           >
-            <UserCircle size={15} /> Profil
+            <UserCircle size={15} /> Profile
           </Link>
           <div className="h-px bg-border my-1" />
           <button
             onClick={() => { setOpen(false); onLogout() }}
             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
           >
-            <LogOut size={15} /> Keluar
+            <LogOut size={15} /> Log Out
           </button>
         </div>
       )}

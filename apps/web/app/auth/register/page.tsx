@@ -13,17 +13,17 @@ import { useState } from 'react'
 
 const schema = z
   .object({
-    name: z.string().min(2, 'Nama minimal 2 karakter'),
-    email: z.string().email('Email tidak valid'),
+    name: z.string().min(2, 'Name must be at least 2 characters'),
+    email: z.string().email('Invalid email address'),
     phone: z
       .string()
-      .min(9, 'Nomor telepon minimal 9 digit')
-      .regex(/^[0-9+\-\s]+$/, 'Format nomor telepon tidak valid'),
-    password: z.string().min(8, 'Password minimal 8 karakter'),
+      .min(9, 'Phone number must be at least 9 digits')
+      .regex(/^[0-9+\-\s]+$/, 'Invalid phone number format'),
+    password: z.string().min(8, 'Password must be at least 8 characters'),
     passwordConfirm: z.string(),
   })
   .refine((d) => d.password === d.passwordConfirm, {
-    message: 'Password tidak sama',
+    message: 'Passwords do not match',
     path: ['passwordConfirm'],
   })
 
@@ -52,7 +52,7 @@ export default function RegisterPage() {
 
   const registerMutation = useMutation({
     mutationFn: (values: FormValues) =>
-      api.postSnake<RegisterResponse>('/auth/register', {
+      api.postSnake<RegisterResponse>('/auth/customer/register', {
         name: values.name,
         email: values.email,
         phone: values.phone,
@@ -70,11 +70,11 @@ export default function RegisterPage() {
         {/* Brand */}
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-emerald-700 mb-1">Amartha eTicket</h1>
-          <p className="text-gray-500 text-sm">Buat akun baru</p>
+          <p className="text-gray-500 text-sm">Create a new account</p>
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-900 mb-5">Daftar Akun</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-5">Create Account</h2>
 
           <form
             onSubmit={handleSubmit((v) => registerMutation.mutate(v))}
@@ -82,12 +82,12 @@ export default function RegisterPage() {
           >
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nama Lengkap
+                Full Name
               </label>
               <input
                 {...register('name')}
                 type="text"
-                placeholder="Nama lengkap kamu"
+                placeholder="Your full name"
                 autoComplete="name"
                 className={cn(
                   'w-full px-3 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500',
@@ -106,7 +106,7 @@ export default function RegisterPage() {
               <input
                 {...register('email')}
                 type="email"
-                placeholder="email@contoh.com"
+                placeholder="email@example.com"
                 autoComplete="email"
                 className={cn(
                   'w-full px-3 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500',
@@ -120,7 +120,7 @@ export default function RegisterPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Nomor WhatsApp
+                WhatsApp Number
               </label>
               <input
                 {...register('phone')}
@@ -145,7 +145,7 @@ export default function RegisterPage() {
                 <input
                   {...register('password')}
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Min. 8 karakter"
+                  placeholder="Min. 8 characters"
                   autoComplete="new-password"
                   className={cn(
                     'w-full px-3 py-2.5 pr-10 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500',
@@ -167,12 +167,12 @@ export default function RegisterPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Konfirmasi Password
+                Confirm Password
               </label>
               <input
                 {...register('passwordConfirm')}
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Ulangi password"
+                placeholder="Repeat password"
                 autoComplete="new-password"
                 className={cn(
                   'w-full px-3 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500',
@@ -189,7 +189,7 @@ export default function RegisterPage() {
                 <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
                 <span>
                   {(registerMutation.error as Error)?.message ??
-                    'Gagal mendaftar. Coba dengan email lain.'}
+                    'Registration failed. Please try a different email.'}
                 </span>
               </div>
             )}
@@ -206,21 +206,21 @@ export default function RegisterPage() {
             >
               {registerMutation.isPending ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" /> Mendaftar...
+                  <Loader2 className="w-4 h-4 animate-spin" /> Creating account...
                 </>
               ) : (
-                'Daftar'
+                'Create Account'
               )}
             </button>
           </form>
 
           <p className="text-center text-sm text-gray-500 mt-5">
-            Sudah punya akun?{' '}
+            Already have an account?{' '}
             <a
               href={`/auth/login${redirect !== '/account' ? `?redirect=${redirect}` : ''}`}
               className="font-medium text-emerald-700 hover:underline"
             >
-              Masuk di sini
+              Sign in here
             </a>
           </p>
         </div>

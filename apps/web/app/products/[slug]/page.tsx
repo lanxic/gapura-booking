@@ -200,20 +200,20 @@ function VariantDetailExpand({ variant, product }: { variant: ProductVariant; pr
         onClick={() => setOpen(o => !o)}
         className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 transition-colors"
       >
-        Lihat Detail &amp; Termasuk
+        View Details &amp; Includes
         {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
       </button>
       {open && (
         <div className="mt-3 space-y-4 text-sm">
           {variant.description && (
             <div>
-              <p className="font-semibold text-gray-700 mb-1">Deskripsi</p>
+              <p className="font-semibold text-gray-700 mb-1">Description</p>
               <p className="text-gray-600">{variant.description}</p>
             </div>
           )}
           {product.usageInstructions && (
             <div>
-              <p className="font-semibold text-gray-700 mb-1">Cara penggunaan</p>
+              <p className="font-semibold text-gray-700 mb-1">How to use</p>
               <ul className="list-disc list-inside text-gray-600 space-y-0.5">
                 {product.usageInstructions.split('\n').filter(Boolean).map((line, i) => (
                   <li key={i}>{line.replace(/^[-•]\s*/, '')}</li>
@@ -223,13 +223,13 @@ function VariantDetailExpand({ variant, product }: { variant: ProductVariant; pr
           )}
           {product.cancellationPolicy && (
             <div>
-              <p className="font-semibold text-gray-700 mb-1">Pembatalan</p>
+              <p className="font-semibold text-gray-700 mb-1">Cancellation</p>
               <p className="text-gray-600">{product.cancellationPolicy}</p>
             </div>
           )}
           {product.termsConditions && (
             <div>
-              <p className="font-semibold text-gray-700 mb-1">Syarat &amp; Ketentuan</p>
+              <p className="font-semibold text-gray-700 mb-1">Terms &amp; Conditions</p>
               <ul className="list-disc list-inside text-gray-600 space-y-0.5">
                 {product.termsConditions.split('\n').filter(Boolean).map((line, i) => (
                   <li key={i}>{line.replace(/^[-•]\s*/, '')}</li>
@@ -280,6 +280,14 @@ export default function ProductDetailPage({
     enabled: !!slug,
   })
 
+  const { data: settingsData } = useQuery({
+    queryKey: ['settings', 'general'],
+    queryFn: () => api.get<{ data: { app_name?: string | null } }>('/settings/general'),
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const appName = settingsData?.data?.app_name || 'Amartha eTicket'
+
   const product = productData?.data
   const slots: AvailabilitySlot[] = availData?.data ?? []
 
@@ -322,6 +330,7 @@ export default function ProductDetailPage({
     cart.setProduct(product.slug)
     cart.setDate(selectedDate, slotId)
     cart.setTicket({
+      productId: product.id,
       variantId: selectedVariantId,
       variantLabel: selectedVariant.label,
       qtyAdult,
@@ -338,7 +347,7 @@ export default function ProductDetailPage({
     ? qtyAdult * selectedVariant.priceAdult + qtyChild * selectedVariant.priceChild
     : 0
 
-  const canAddToCart = !!selectedVariantId && !!selectedDate && (qtyAdult + qtyChild) > 0
+  const canAddToCart = !!selectedVariantId && !!selectedDate && (qtyAdult + qtyChild) > 0 && slotsForDate.length > 0
 
   if (loadingProduct) {
     return (
@@ -355,9 +364,9 @@ export default function ProductDetailPage({
   if (!product) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-20 text-center text-gray-500">
-        <p className="text-lg font-medium">Produk tidak ditemukan.</p>
-        <a href="/products" className="text-emerald-600 hover:underline text-sm mt-2 inline-block">
-          Kembali ke daftar produk
+        <p className="text-lg font-medium">Product not found.</p>
+        <a href="/" className="text-emerald-600 hover:underline text-sm mt-2 inline-block">
+          Back to products
         </a>
       </div>
     )
@@ -370,17 +379,17 @@ export default function ProductDetailPage({
     : []
 
   const tabs = [
-    { key: 'deskripsi' as const, label: 'Deskripsi' },
-    { key: 'info' as const, label: 'Hal-hal yang Perlu Diperhatikan' },
-    { key: 'jam' as const, label: 'Jam Operasional' },
-    { key: 'lokasi' as const, label: 'Lokasi' },
+    { key: 'deskripsi' as const, label: 'Description' },
+    { key: 'info' as const, label: 'Important Information' },
+    { key: 'jam' as const, label: 'Opening Hours' },
+    { key: 'lokasi' as const, label: 'Location' },
   ]
 
   return (
     <div>
       {/* Breadcrumb */}
       <div className="max-w-4xl mx-auto px-4 pt-4 pb-2 text-sm text-gray-500">
-        <a href="/" className="hover:text-emerald-600 transition-colors">Beranda</a>
+        <a href="/" className="hover:text-emerald-600 transition-colors">Home</a>
         <span className="mx-2">&gt;</span>
         <span className="text-gray-700">{product.name}</span>
       </div>
@@ -393,7 +402,7 @@ export default function ProductDetailPage({
       <div className="max-w-4xl mx-auto px-4 py-6">
         {/* Title + Share */}
         <div className="mb-1">
-          <p className="text-xs text-gray-400 mb-1">Taman Safari Bali</p>
+          <p className="text-xs text-gray-400 mb-1">{appName}</p>
           <div className="flex items-start justify-between gap-4">
             <h1 className="text-2xl font-bold text-gray-900">{product.name}</h1>
             <button
@@ -430,7 +439,7 @@ export default function ProductDetailPage({
           <div className="space-y-5 mb-8">
             {product.highlights.length > 0 && (
               <div>
-                <h2 className="font-bold text-emerald-700 mb-2">Sorotan</h2>
+                <h2 className="font-bold text-emerald-700 mb-2">Highlights</h2>
                 <ul className="space-y-1">
                   {product.highlights.map((h, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
@@ -452,7 +461,7 @@ export default function ProductDetailPage({
             {product.termsConditions ? (
               <div className="whitespace-pre-line">{product.termsConditions}</div>
             ) : (
-              <p className="text-gray-400">Tidak ada informasi.</p>
+              <p className="text-gray-400">No information available.</p>
             )}
           </div>
         )}
@@ -465,7 +474,7 @@ export default function ProductDetailPage({
                 <p>{product.openingHours}</p>
               </div>
             ) : (
-              <p className="text-gray-400">Informasi jam operasional belum tersedia.</p>
+              <p className="text-gray-400">Opening hours information not yet available.</p>
             )}
           </div>
         )}
@@ -478,7 +487,7 @@ export default function ProductDetailPage({
                 <p className="whitespace-pre-line">{product.location}</p>
               </div>
             ) : (
-              <p className="text-gray-400">Informasi lokasi belum tersedia.</p>
+              <p className="text-gray-400">Location information not yet available.</p>
             )}
           </div>
         )}
@@ -486,7 +495,7 @@ export default function ProductDetailPage({
         {/* Periksa Ketersediaan */}
         <div ref={availRef} className="mb-6">
           <h2 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-            <span className="text-emerald-600">&#10148;</span> Periksa Ketersediaan
+            <span className="text-emerald-600">&#10148;</span> Check Availability
           </h2>
           <div className="flex gap-2 flex-wrap">
             <button
@@ -520,7 +529,7 @@ export default function ProductDetailPage({
                   : 'border-gray-300 text-gray-700 hover:border-emerald-500',
               )}
             >
-              <Calendar className="w-4 h-4" /> Pilih Tanggal
+              <Calendar className="w-4 h-4" /> Choose Date
             </button>
           </div>
 
@@ -538,7 +547,7 @@ export default function ProductDetailPage({
         {/* Pilihan Tiket */}
         <div>
           <h2 className="font-bold text-gray-800 mb-3 flex items-center gap-2">
-            <span className="text-emerald-600">&#10148;</span> Pilihan Tiket
+            <span className="text-emerald-600">&#10148;</span> Ticket Options
           </h2>
 
           <div className="space-y-4">
@@ -556,7 +565,7 @@ export default function ProductDetailPage({
                     <div>
                       <p className="font-semibold text-gray-800">{variant.label}</p>
                       <p className="text-sm text-gray-500 mt-0.5">
-                        Dari <span className="font-semibold text-gray-800">{formatRupiah(lowestPrice)}</span>
+                        From <span className="font-semibold text-gray-800">{formatRupiah(lowestPrice)}</span>
                       </p>
                     </div>
                     <button
@@ -568,7 +577,7 @@ export default function ProductDetailPage({
                           : 'bg-emerald-700 text-white hover:bg-emerald-800',
                       )}
                     >
-                      {isSelected ? 'Batal' : 'Pilih'}
+                      {isSelected ? 'Cancel' : 'Select'}
                     </button>
                   </div>
 
@@ -577,7 +586,7 @@ export default function ProductDetailPage({
                     <div className="border-t border-gray-100 p-4 space-y-5 bg-gray-50/50">
                       {/* Slot picker (if multiple slots) */}
                       {loadingAvail && (
-                        <p className="text-sm text-gray-400">Memuat jadwal...</p>
+                        <p className="text-sm text-gray-400">Loading schedule...</p>
                       )}
                       {!loadingAvail && (
                         <>
@@ -585,9 +594,9 @@ export default function ProductDetailPage({
                           <div className="flex items-center gap-2 text-sm text-gray-600">
                             <Calendar className="w-4 h-4 text-emerald-600" />
                             <span>
-                              Tanggal kunjungan:{' '}
+                              Visit date:{' '}
                               <span className="font-semibold text-gray-800">
-                                {new Date(selectedDate + 'T00:00:00').toLocaleDateString('id-ID', {
+                                {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-GB', {
                                   weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
                                 })}
                               </span>
@@ -604,7 +613,7 @@ export default function ProductDetailPage({
                           {/* Time slot selection */}
                           {slotsForDate.length > 1 && (
                             <div>
-                              <p className="text-sm font-semibold text-gray-700 mb-2">Pilih Waktu</p>
+                              <p className="text-sm font-semibold text-gray-700 mb-2">Select Time</p>
                               <div className="flex flex-wrap gap-2">
                                 {slotsForDate.map(slot => (
                                   <button
@@ -620,7 +629,7 @@ export default function ProductDetailPage({
                                         : 'border-gray-200 hover:border-emerald-400',
                                     )}
                                   >
-                                    {slot.timeSlot ?? 'Sepanjang Hari'}
+                                    {slot.timeSlot ?? 'All Day'}
                                     <span className={cn('ml-1 text-xs', {
                                       'text-emerald-500': slot.status === 'available',
                                       'text-amber-500': slot.status === 'limited',
@@ -637,7 +646,7 @@ export default function ProductDetailPage({
                           {slotsForDate.length === 0 && (
                             <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 rounded-lg p-3">
                               <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                              Tidak ada jadwal tersedia untuk tanggal ini.
+                              No schedule available for this date.
                             </div>
                           )}
                         </>
@@ -645,14 +654,14 @@ export default function ProductDetailPage({
 
                       {/* Quantity */}
                       <div>
-                        <p className="text-sm font-semibold text-gray-700 mb-3">Kuantitas</p>
+                        <p className="text-sm font-semibold text-gray-700 mb-3">Quantity</p>
                         <div className="space-y-3">
                           {/* Adult */}
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="font-medium text-gray-800 text-sm">Adult</p>
                               <p className="text-xs text-gray-400">
-                                Rentang Usia ({variant.adultMinAge} - {variant.adultMaxAge})
+                                Age range ({variant.adultMinAge} - {variant.adultMaxAge})
                               </p>
                             </div>
                             <div className="flex items-center gap-3">
@@ -683,7 +692,7 @@ export default function ProductDetailPage({
                               <div>
                                 <p className="font-medium text-gray-800 text-sm">Child</p>
                                 <p className="text-xs text-gray-400">
-                                  Rentang Usia ({variant.childMinAge} - {variant.childMaxAge})
+                                  Age range ({variant.childMinAge} - {variant.childMaxAge})
                                 </p>
                               </div>
                               <div className="flex items-center gap-3">
@@ -728,7 +737,7 @@ export default function ProductDetailPage({
                               : 'bg-gray-200 text-gray-400 cursor-not-allowed',
                           )}
                         >
-                          Tambahkan ke keranjang
+                          Add to cart
                         </button>
                       </div>
                     </div>
@@ -746,7 +755,7 @@ export default function ProductDetailPage({
 
             {product.variants.filter(v => v.isActive).length === 0 && (
               <div className="text-center py-10 text-gray-400 text-sm">
-                Tidak ada tiket tersedia saat ini.
+                No tickets available at this time.
               </div>
             )}
           </div>

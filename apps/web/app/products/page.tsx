@@ -43,15 +43,15 @@ function ProductCard({ product }: { product: Product }) {
           <div>
             {lowestAdult !== null ? (
               <>
-                <span className="text-xs text-gray-400">Mulai dari</span>
+                <span className="text-xs text-gray-400">From</span>
                 <p className="font-bold text-emerald-700">{formatRupiah(lowestAdult)}</p>
               </>
             ) : (
-              <span className="text-sm text-gray-400">Hubungi kami</span>
+              <span className="text-sm text-gray-400">Contact us</span>
             )}
           </div>
           <span className="bg-emerald-600 text-white text-sm px-3 py-1.5 rounded-full">
-            Pesan
+            Book
           </span>
         </div>
       </div>
@@ -74,8 +74,8 @@ export default function ProductsPage() {
   return (
     <div className="max-w-5xl mx-auto px-4 py-10">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-1">Produk Wisata</h1>
-        <p className="text-gray-500">Temukan pengalaman wisata yang sempurna untukmu</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-1">Tour Products</h1>
+        <p className="text-gray-500">Find the perfect tour experience for you</p>
       </div>
 
       {/* Search */}
@@ -83,7 +83,7 @@ export default function ProductsPage() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
         <input
           type="text"
-          placeholder="Cari produk wisata..."
+          placeholder="Search tour products..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
@@ -92,8 +92,8 @@ export default function ProductsPage() {
 
       {isError && (
         <div className="text-center py-16 text-gray-500">
-          <p className="font-medium">Gagal memuat data produk.</p>
-          <p className="text-sm mt-1">Periksa koneksi internet Anda dan coba lagi.</p>
+          <p className="font-medium">Failed to load products.</p>
+          <p className="text-sm mt-1">Check your internet connection and try again.</p>
         </div>
       )}
 
@@ -115,7 +115,7 @@ export default function ProductsPage() {
       {!isLoading && !isError && products.length === 0 && (
         <div className="text-center py-16 text-gray-500">
           <p className="font-medium">
-            {search ? `Tidak ada produk dengan kata kunci "${search}"` : 'Belum ada produk tersedia'}
+            {search ? `No products found for "${search}"` : 'No products available yet'}
           </p>
         </div>
       )}

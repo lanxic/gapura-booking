@@ -19,7 +19,7 @@ const ROLE_LABELS: Record<string, string> = {
   super_admin: 'Super Admin',
   admin:       'Admin',
   supervisor:  'Supervisor',
-  kasir:       'Kasir',
+  kasir:       'Cashier',
   scanner:     'Scanner',
 }
 
@@ -110,7 +110,7 @@ function CreateUserModal({ onClose, token }: { onClose: () => void; token: strin
   const mutation = useMutation({
     mutationFn: (payload: typeof form) => api.post<any>('/admin/users', payload, { token }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-users'] }); onClose() },
-    onError: (e: any) => setError(e?.message ?? 'Gagal membuat pengguna'),
+    onError: (e: any) => setError(e?.message ?? 'Failed to create user'),
   })
 
   const set = (k: keyof typeof form) => (v: string) => setForm(p => ({ ...p, [k]: v }))
@@ -119,13 +119,13 @@ function CreateUserModal({ onClose, token }: { onClose: () => void; token: strin
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
       <div className="w-full max-w-md mx-4 rounded-2xl border border-border bg-card shadow-2xl">
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <h2 className="text-base font-semibold">Tambah Pengguna</h2>
+          <h2 className="text-base font-semibold">Add User</h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors"><X size={18} /></button>
         </div>
 
         <div className="px-6 py-5 space-y-4">
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">Nama Lengkap</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Full Name</label>
             <input value={form.name} onChange={e => set('name')(e.target.value)} placeholder="Budi Santoso"
               className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring transition" />
           </div>
@@ -136,7 +136,7 @@ function CreateUserModal({ onClose, token }: { onClose: () => void; token: strin
           </div>
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-1">Password</label>
-            <PasswordInput value={form.password} onChange={set('password')} placeholder="Min. 8 karakter" />
+            <PasswordInput value={form.password} onChange={set('password')} placeholder="Min. 8 characters" />
           </div>
           <div>
             <label className="block text-xs font-medium text-muted-foreground mb-1">Role</label>
@@ -151,12 +151,12 @@ function CreateUserModal({ onClose, token }: { onClose: () => void; token: strin
         <div className="flex justify-end gap-3 px-6 py-4 border-t border-border">
           <button onClick={onClose}
             className="px-4 py-2 rounded-lg border border-border text-sm font-medium hover:bg-accent transition-colors">
-            Batal
+            Cancel
           </button>
           <button onClick={() => mutation.mutate(form)} disabled={mutation.isPending}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors">
             {mutation.isPending && <Loader2 size={14} className="animate-spin" />}
-            Buat Pengguna
+            Create User
           </button>
         </div>
       </div>
@@ -196,7 +196,7 @@ function UserDetailModal({ user, onClose, token, currentUserId }: {
       setPassword('')
       setTimeout(() => setSaved(false), 3000)
     },
-    onError: (e: any) => setSaveError(e?.message ?? 'Gagal menyimpan'),
+    onError: (e: any) => setSaveError(e?.message ?? 'Failed to save'),
   })
 
   const deactivateMutation = useMutation({
@@ -210,7 +210,7 @@ function UserDetailModal({ user, onClose, token, currentUserId }: {
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <h2 className="text-base font-semibold">Detail Pengguna</h2>
+          <h2 className="text-base font-semibold">User Details</h2>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors"><X size={18} /></button>
         </div>
 
@@ -227,23 +227,23 @@ function UserDetailModal({ user, onClose, token, currentUserId }: {
             </div>
             <span className={cn('ml-auto shrink-0 px-2 py-0.5 rounded-md text-xs font-medium',
               user.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500')}>
-              {user.is_active ? 'Aktif' : 'Nonaktif'}
+              {user.is_active ? 'Active' : 'Inactive'}
             </span>
           </div>
 
           {/* Read-only info */}
           <div className="grid grid-cols-2 gap-3 rounded-xl border border-border bg-muted/20 px-4 py-3">
             <InfoRow icon={Mail}     label="Email"      value={user.email} />
-            <InfoRow icon={Calendar} label="Bergabung"  value={new Date(user.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })} />
+            <InfoRow icon={Calendar} label="Joined"  value={new Date(user.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })} />
           </div>
 
           {/* Editable fields */}
           {!isSuper && (
             <div className="space-y-4">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Edit Pengguna</p>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Edit User</p>
 
               <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Nama Lengkap</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">Full Name</label>
                 <input value={name} onChange={e => setName(e.target.value)}
                   className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring transition" />
               </div>
@@ -263,7 +263,7 @@ function UserDetailModal({ user, onClose, token, currentUserId }: {
                       'w-full flex items-center justify-between px-3 py-2 rounded-lg border text-sm font-medium transition-colors',
                       isActive ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-border bg-background text-muted-foreground',
                     )}>
-                    {isActive ? 'Aktif' : 'Nonaktif'}
+                    {isActive ? 'Active' : 'Inactive'}
                     <span className={cn('h-2 w-2 rounded-full', isActive ? 'bg-emerald-500' : 'bg-gray-300')} />
                   </button>
                 </div>
@@ -271,9 +271,9 @@ function UserDetailModal({ user, onClose, token, currentUserId }: {
 
               <div>
                 <label className="block text-xs font-medium text-muted-foreground mb-1">
-                  Password Baru <span className="text-muted-foreground/60 font-normal">(kosongkan jika tidak diubah)</span>
+                  New Password <span className="text-muted-foreground/60 font-normal">(leave blank to keep unchanged)</span>
                 </label>
-                <PasswordInput value={password} onChange={setPassword} placeholder="Min. 8 karakter" />
+                <PasswordInput value={password} onChange={setPassword} placeholder="Min. 8 characters" />
               </div>
 
               {saveError && <p className="text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">{saveError}</p>}
@@ -291,15 +291,15 @@ function UserDetailModal({ user, onClose, token, currentUserId }: {
               className="flex items-center gap-2 px-3 py-2 rounded-lg border border-destructive/40 text-destructive text-sm font-medium hover:bg-destructive/10 disabled:opacity-50 transition-colors"
             >
               {deactivateMutation.isPending ? <Loader2 size={13} className="animate-spin" /> : <UserX size={13} />}
-              Nonaktifkan
+              Deactivate
             </button>
           ) : <span />}
 
           <div className="flex items-center gap-3">
-            {saved && <span className="flex items-center gap-1 text-sm text-emerald-600"><CheckCircle size={13} /> Tersimpan</span>}
+            {saved && <span className="flex items-center gap-1 text-sm text-emerald-600"><CheckCircle size={13} /> Saved</span>}
             <button onClick={onClose}
               className="px-4 py-2 rounded-lg border border-border text-sm font-medium hover:bg-accent transition-colors">
-              Tutup
+              Close
             </button>
             {!isSuper && (
               <button
@@ -308,7 +308,7 @@ function UserDetailModal({ user, onClose, token, currentUserId }: {
                 className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors"
               >
                 {updateMutation.isPending && <Loader2 size={14} className="animate-spin" />}
-                Simpan
+                Save
               </button>
             )}
           </div>
@@ -334,9 +334,9 @@ export default function UsersPage() {
           <ShieldOff size={32} className="text-destructive" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-foreground">Akses Ditolak</h2>
+          <h2 className="text-xl font-bold text-foreground">Access Denied</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Halaman ini hanya dapat diakses oleh <strong>Admin</strong> dan <strong>Super Admin</strong>.
+            This page can only be accessed by <strong>Admin</strong> and <strong>Super Admin</strong>.
           </p>
         </div>
       </div>
@@ -362,14 +362,14 @@ export default function UsersPage() {
     <div className="space-y-6">
       <PageHeader
         icon={Users}
-        title="Pengguna"
-        description="Kelola akun admin dan staf"
+        title="Users"
+        description="Manage admin and staff accounts"
         action={
           <button
             onClick={() => setShowCreate(true)}
             className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
           >
-            <Plus size={16} /> Tambah Pengguna
+            <Plus size={16} /> Add User
           </button>
         }
       />
@@ -380,7 +380,7 @@ export default function UsersPage() {
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Cari nama / email..."
+            placeholder="Search name / email..."
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1) }}
             className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
@@ -391,7 +391,7 @@ export default function UsersPage() {
           onChange={e => { setRole(e.target.value); setPage(1) }}
           className="px-3 py-2 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
         >
-          <option value="">Semua Role</option>
+          <option value="">All Roles</option>
           {(Object.keys(ROLE_LABELS) as AdminRole[]).map(r => (
             <option key={r} value={r}>{ROLE_LABELS[r]}</option>
           ))}
@@ -399,10 +399,10 @@ export default function UsersPage() {
       </div>
 
       <TableCard
-        columns={['Nama', 'Email', 'Role', 'Bergabung', 'Status']}
+        columns={['Name', 'Email', 'Role', 'Joined', 'Status']}
         isLoading={isLoading}
         isEmpty={users.length === 0}
-        emptyMessage="Tidak ada pengguna."
+        emptyMessage="No users."
       >
         {users.map(user => {
           const roleVal = resolveRole(user)
@@ -425,12 +425,12 @@ export default function UsersPage() {
                 </span>
               </td>
               <td className="px-4 py-3 text-muted-foreground text-xs">
-                {new Date(user.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                {new Date(user.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
               </td>
               <td className="px-4 py-3">
                 <span className={cn('px-2 py-0.5 rounded-md text-xs font-medium',
                   user.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500')}>
-                  {user.is_active ? 'Aktif' : 'Nonaktif'}
+                  {user.is_active ? 'Active' : 'Inactive'}
                 </span>
               </td>
             </tr>
@@ -442,7 +442,7 @@ export default function UsersPage() {
         page={page}
         lastPage={meta.lastPage}
         total={meta.total}
-        label="pengguna"
+        label="users"
         onChange={setPage}
       />
 

@@ -55,14 +55,14 @@ export default function ProductsPage() {
     <div className="space-y-6">
       <PageHeader
         icon={Ticket}
-        title="Produk"
-        description="Kelola produk tiket wisata"
+        title="Products"
+        description="Manage tour ticket products"
         action={
           <button
             onClick={() => router.push('/products/new')}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
           >
-            <Plus size={16} /> Tambah Produk
+            <Plus size={16} /> Add Product
           </button>
         }
       />
@@ -72,7 +72,7 @@ export default function ProductsPage() {
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <input
           type="text"
-          placeholder="Cari nama produk..."
+          placeholder="Search product name..."
           value={search}
           onChange={e => { setSearch(e.target.value); setPage(1) }}
           className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
@@ -82,15 +82,15 @@ export default function ProductsPage() {
       <TableCard
         columns={[
           { label: '',            className: 'w-12' },
-          'Nama Produk',
-          { label: 'Deskripsi',   className: 'hidden md:table-cell' },
-          'Varian',
+          'Product Name',
+          { label: 'Description',   className: 'hidden md:table-cell' },
+          'Variants',
           'Status',
-          { label: 'Aksi', align: 'right' },
+          { label: 'Actions', align: 'right' },
         ]}
         isLoading={isLoading}
         isEmpty={products.length === 0}
-        emptyMessage='Belum ada produk. Klik "Tambah Produk" untuk memulai.'
+        emptyMessage='No products yet. Click "Add Product" to get started.'
         skeletonRows={5}
       >
         {products.map((p: any) => (
@@ -116,22 +116,22 @@ export default function ProductsPage() {
             <td className="px-4 py-3">
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-xs font-medium">
                 <Layers size={11} />
-                {p.variants?.length ?? 0} varian
+                {p.variants?.length ?? 0} variants
               </span>
             </td>
             <td className="px-4 py-3">
               <span className={cn('px-2 py-0.5 rounded-md text-xs font-medium',
                 p.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500')}>
-                {p.is_active ? 'Aktif' : 'Nonaktif'}
+                {p.is_active ? 'Active' : 'Inactive'}
               </span>
             </td>
             <td className="px-4 py-3">
               <div className="flex items-center gap-1 justify-end">
-                <button onClick={() => router.push(`/products/${p.id}`)} title="Edit Produk"
+                <button onClick={() => router.push(`/products/${p.id}`)} title="Edit Product"
                   className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
                   <Pencil size={15} />
                 </button>
-                <button onClick={() => handleDelete(p.id, p.name)} disabled={deletingId === p.id} title="Hapus Produk"
+                <button onClick={() => handleDelete(p.id, p.name)} disabled={deletingId === p.id} title="Delete Product"
                   className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 disabled:opacity-40 transition-colors">
                   {deletingId === p.id ? <Loader2 size={15} className="animate-spin" /> : <Trash2 size={15} />}
                 </button>
@@ -145,14 +145,14 @@ export default function ProductsPage() {
         page={page}
         lastPage={meta.lastPage}
         total={meta.total}
-        label="produk"
+        label="products"
         onChange={setPage}
       />
 
       <ConfirmDialog
         open={confirmTarget !== null}
-        title="Hapus Produk"
-        description={`Hapus produk "${confirmTarget?.name}"? Tindakan ini tidak dapat dibatalkan.`}
+        title="Delete Product"
+        description={`Delete product "${confirmTarget?.name}"? This action cannot be undone.`}
         loading={deleteMutation.isPending}
         onConfirm={handleConfirmDelete}
         onClose={() => { if (!deleteMutation.isPending) setConfirmTarget(null) }}

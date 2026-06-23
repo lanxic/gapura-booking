@@ -117,7 +117,7 @@ function VoucherModal({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <h2 className="text-base font-semibold text-foreground">
-            {mode === 'create' ? 'Tambah Voucher' : 'Edit Voucher'}
+            {mode === 'create' ? 'Add Voucher' : 'Edit Voucher'}
           </h2>
           <button type="button" onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
             <X size={18} />
@@ -130,19 +130,19 @@ function VoucherModal({
           {/* Kode + Jenis */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Kode Voucher</Label>
+              <Label>Voucher Code</Label>
               <div className="relative">
                 <TextInput
                   value={form.code}
                   onChange={set('code')}
-                  placeholder="Otomatis jika kosong"
+                  placeholder="Auto-generated if empty"
                 />
                 {mode === 'create' && form.code === '' && (
                   <button
                     type="button"
                     onClick={() => set('code')(Math.random().toString(36).slice(2, 10).toUpperCase())}
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    title="Generate kode acak"
+                    title="Generate random code"
                   >
                     <RefreshCw size={13} />
                   </button>
@@ -150,13 +150,13 @@ function VoucherModal({
               </div>
             </div>
             <div>
-              <Label>Jenis Diskon</Label>
+              <Label>Discount Type</Label>
               <select
                 value={form.type}
                 onChange={e => set('type')(e.target.value as 'percent' | 'fixed')}
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring transition"
               >
-                <option value="percent">Persen (%)</option>
+                <option value="percent">Percent (%)</option>
                 <option value="fixed">Nominal (Rp)</option>
               </select>
             </div>
@@ -164,7 +164,7 @@ function VoucherModal({
 
           {/* Diskon */}
           <div>
-            <Label>{form.type === 'percent' ? 'Persentase Diskon (%)' : 'Nominal Diskon (Rp)'}</Label>
+            <Label>{form.type === 'percent' ? 'Discount Percentage (%)' : 'Discount Amount (Rp)'}</Label>
             <TextInput
               value={form.value}
               onChange={set('value')}
@@ -176,7 +176,7 @@ function VoucherModal({
           {/* Min purchase + quota */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Min. Pembelian (Rp, opsional)</Label>
+              <Label>Min. Purchase (Rp, optional)</Label>
               <TextInput value={form.min_purchase} onChange={set('min_purchase')} placeholder="100000" type="number" />
             </div>
             <div>

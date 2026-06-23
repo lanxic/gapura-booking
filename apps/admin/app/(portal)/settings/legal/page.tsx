@@ -56,16 +56,16 @@ export default function SettingsLegalPage() {
         <div className="rounded-xl border border-border bg-card p-6 space-y-5">
           <div>
             <label className="block text-sm font-medium text-foreground mb-0.5">
-              Kebijakan Privasi
+              Privacy Policy
             </label>
             <p className="text-xs text-muted-foreground mb-2">
-              Isi kebijakan privasi yang ditampilkan kepada pengguna
+              Fill in the privacy policy displayed to users
             </p>
             <textarea
               value={form.privacy_policy}
               onChange={e => setForm(prev => ({ ...prev, privacy_policy: e.target.value }))}
               rows={10}
-              placeholder="Tulis kebijakan privasi di sini..."
+              placeholder="Write the privacy policy here..."
               className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition resize-none font-mono"
             />
           </div>
@@ -74,16 +74,16 @@ export default function SettingsLegalPage() {
 
           <div>
             <label className="block text-sm font-medium text-foreground mb-0.5">
-              Syarat dan Ketentuan
+              Terms and Conditions
             </label>
             <p className="text-xs text-muted-foreground mb-2">
-              Isi syarat dan ketentuan penggunaan platform
+              Fill in the terms and conditions for platform use
             </p>
             <textarea
               value={form.terms_of_service}
               onChange={e => setForm(prev => ({ ...prev, terms_of_service: e.target.value }))}
               rows={10}
-              placeholder="Tulis syarat dan ketentuan di sini..."
+              placeholder="Write the terms and conditions here..."
               className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition resize-none font-mono"
             />
           </div>
@@ -96,16 +96,16 @@ export default function SettingsLegalPage() {
             className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors"
           >
             {mutation.isPending ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
-            Simpan
+            Save
           </button>
           {saved && (
             <span className="flex items-center gap-1.5 text-sm text-emerald-600">
-              <CheckCircle size={14} /> Tersimpan
+              <CheckCircle size={14} /> Saved
             </span>
           )}
           {mutation.isError && (
             <span className="flex items-center gap-1.5 text-sm text-destructive">
-              <AlertCircle size={14} /> {(mutation.error as Error)?.message ?? 'Gagal menyimpan'}
+              <AlertCircle size={14} /> {(mutation.error as Error)?.message ?? 'Failed to save'}
             </span>
           )}
         </div>
