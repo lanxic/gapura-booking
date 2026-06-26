@@ -1,7 +1,5 @@
 packages:
-  - 'apps/web'
-  - 'apps/admin'
-  - 'apps/api'
+  - 'apps/main'
   - 'apps/scanner'
   - 'packages/*'
 
