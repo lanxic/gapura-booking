@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Models\Invoice;
+use App\Models\PaymentGateway;
 use App\Services\InvoiceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,7 +21,11 @@ class InvoiceController extends Controller
             ->with('booking')
             ->firstOrFail();
 
-        return view('invoice.show', compact('invoice'));
+        $gateway = $invoice->gateway
+            ? PaymentGateway::where('name', $invoice->gateway)->first()
+            : null;
+
+        return view('tenant.storefront.invoice.show', compact('invoice', 'gateway'));
     }
 
     public function retry(string $tenantSlug, Request $request, string $code)
@@ -31,7 +36,7 @@ class InvoiceController extends Controller
             ->firstOrFail();
 
         try {
-            $snapToken = $this->invoiceService->retryPayment($invoice);
+            $snapToken = $this->invoiceService->initiateSnapToken($invoice);
         } catch (\Throwable $e) {
             return back()->with('error', $e->getMessage());
         }

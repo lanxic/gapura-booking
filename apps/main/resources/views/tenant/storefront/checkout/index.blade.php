@@ -125,6 +125,80 @@
                     </div>
                 </div>
 
+                {{-- Payment Method --}}
+                <div class="co-card">
+                    <div class="co-card-title">Metode Pembayaran</div>
+
+                    @php
+                        $defaultMethod = old('payment_method',
+                            $activeOnlineGateway ? $activeOnlineGateway->name : ($activeOfflineGateways->first()?->name ?? 'cash')
+                        );
+                    @endphp
+
+                    @if($activeOnlineGateway)
+                    <div class="mb-2">
+                        <label class="d-flex align-items-start gap-3 p-3 rounded border cursor-pointer payment-option
+                                       {{ $defaultMethod === $activeOnlineGateway->name ? 'border-primary bg-primary bg-opacity-5' : 'border-light' }}"
+                               style="cursor:pointer"
+                               x-data
+                               @click="$el.querySelector('input').click()">
+                            <input type="radio" name="payment_method"
+                                   value="{{ $activeOnlineGateway->name }}"
+                                   class="form-check-input mt-1 flex-shrink-0"
+                                   {{ $defaultMethod === $activeOnlineGateway->name ? 'checked' : '' }}
+                                   onchange="document.querySelectorAll('.payment-option').forEach(el => el.classList.remove('border-primary','bg-primary','bg-opacity-5'));this.closest('.payment-option').classList.add('border-primary','bg-primary','bg-opacity-5')">
+                            <div>
+                                @if($activeOnlineGateway->name === 'midtrans')
+                                <div class="fw-semibold" style="font-size:.9rem">Midtrans</div>
+                                <div class="text-muted" style="font-size:.78rem">Kartu kredit, transfer bank, GoPay, OVO, QRIS, dan lainnya</div>
+                                @elseif($activeOnlineGateway->name === 'doku')
+                                <div class="fw-semibold" style="font-size:.9rem">DOKU</div>
+                                <div class="text-muted" style="font-size:.78rem">Kartu kredit, virtual account, e-wallet</div>
+                                @else
+                                <div class="fw-semibold" style="font-size:.9rem">{{ ucfirst($activeOnlineGateway->name) }}</div>
+                                @endif
+                            </div>
+                        </label>
+                    </div>
+                    @endif
+
+                    @foreach($activeOfflineGateways as $offlineGw)
+                    <div class="mb-2">
+                        <label class="d-flex align-items-start gap-3 p-3 rounded border cursor-pointer payment-option
+                                       {{ $defaultMethod === $offlineGw->name ? 'border-primary bg-primary bg-opacity-5' : 'border-light' }}"
+                               style="cursor:pointer">
+                            <input type="radio" name="payment_method"
+                                   value="{{ $offlineGw->name }}"
+                                   class="form-check-input mt-1 flex-shrink-0"
+                                   {{ $defaultMethod === $offlineGw->name ? 'checked' : '' }}
+                                   onchange="document.querySelectorAll('.payment-option').forEach(el => el.classList.remove('border-primary','bg-primary','bg-opacity-5'));this.closest('.payment-option').classList.add('border-primary','bg-primary','bg-opacity-5')">
+                            <div>
+                                @if($offlineGw->name === 'cash')
+                                <div class="fw-semibold" style="font-size:.9rem">Bayar Tunai</div>
+                                <div class="text-muted" style="font-size:.78rem">Pembayaran diterima langsung di lokasi oleh petugas</div>
+                                @elseif($offlineGw->name === 'bank_transfer')
+                                <div class="fw-semibold" style="font-size:.9rem">Transfer Bank</div>
+                                <div class="text-muted" style="font-size:.78rem">Transfer ke rekening kami, detail dikirim setelah checkout</div>
+                                @else
+                                <div class="fw-semibold" style="font-size:.9rem">{{ ucfirst(str_replace('_', ' ', $offlineGw->name)) }}</div>
+                                @endif
+                            </div>
+                        </label>
+                    </div>
+                    @endforeach
+
+                    @if(!$activeOnlineGateway && $activeOfflineGateways->isEmpty())
+                    <div class="alert alert-warning small mb-0">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        Tidak ada metode pembayaran yang tersedia. Hubungi admin.
+                    </div>
+                    @endif
+
+                    @error('payment_method')
+                    <div class="text-danger small mt-2">{{ $message }}</div>
+                    @enderror
+                </div>
+
             </form>
         </div>
 

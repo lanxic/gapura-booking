@@ -79,7 +79,56 @@ class InvoiceService
     }
 
     /**
+     * Inisialisasi Snap token Midtrans untuk pembayaran online (Step 3).
+     * Returns snap_token string untuk digunakan di Snap.js popup.
+     */
+    public function initiateSnapToken(Invoice $invoice): string
+    {
+        $gateway = PaymentGateway::where('type', 'online')->where('is_active', true)->first()
+            ?? throw new \DomainException('Tidak ada payment gateway online yang aktif.');
+
+        $attemptNumber = $invoice->paymentAttempts()->count() + 1;
+        $attemptCode   = sprintf('PAY-%s-%03d', $invoice->invoice_code, $attemptNumber);
+
+        PaymentAttempt::create([
+            'attempt_code' => $attemptCode,
+            'invoice_id'   => $invoice->id,
+            'gateway'      => $gateway->name,
+            'gateway_env'  => $gateway->environment,
+            'amount'       => $invoice->due_now,
+            'status'       => 'pending',
+            'attempted_at' => now(),
+        ]);
+
+        $invoice->update([
+            'status'           => 'pending',
+            'gateway'          => $gateway->name,
+            'gateway_order_id' => $invoice->invoice_code,
+        ]);
+
+        return match ($gateway->name) {
+            'midtrans' => $this->getMidtransSnapToken($gateway, $invoice),
+            default    => throw new \DomainException("Gateway '{$gateway->name}' belum mendukung Snap checkout."),
+        };
+    }
+
+    /**
+     * Tandai invoice offline sebagai pending + simpan gateway yang dipilih.
+     */
+    public function markOfflinePayment(Invoice $invoice, string $gatewayName): void
+    {
+        $gateway = PaymentGateway::where('name', $gatewayName)->where('type', 'offline')->where('is_active', true)->first()
+            ?? throw new \DomainException('Metode pembayaran offline tidak tersedia.');
+
+        $invoice->update([
+            'status'  => 'pending',
+            'gateway' => $gateway->name,
+        ]);
+    }
+
+    /**
      * Inisialisasi payment request ke gateway aktif (Step 3).
+     * @deprecated Gunakan initiateSnapToken() untuk web checkout
      */
     public function initiatePayment(Invoice $invoice): array
     {
@@ -99,7 +148,6 @@ class InvoiceService
             'attempted_at'   => now(),
         ]);
 
-        // Update invoice status → pending
         $invoice->update([
             'status'           => 'pending',
             'gateway'          => $gateway->name,
@@ -236,20 +284,17 @@ class InvoiceService
     private function dispatchToGateway(PaymentGateway $gateway, Invoice $invoice, PaymentAttempt $attempt): string
     {
         return match ($gateway->name) {
-            'midtrans' => $this->dispatchMidtrans($gateway, $invoice),
+            'midtrans' => $this->getMidtransSnapToken($gateway, $invoice),
             default    => throw new \DomainException("Gateway '{$gateway->name}' belum didukung."),
         };
     }
 
-    private function dispatchMidtrans(PaymentGateway $gateway, Invoice $invoice): string
+    private function getMidtransSnapToken(PaymentGateway $gateway, Invoice $invoice): string
     {
         \Midtrans\Config::$serverKey    = $gateway->server_key;
         \Midtrans\Config::$isProduction = $gateway->environment === 'production';
         \Midtrans\Config::$isSanitized  = true;
         \Midtrans\Config::$is3ds        = true;
-
-        $frontendUrl  = rtrim(config('app.frontend_url', env('FRONTEND_URL', 'http://localhost:3000')), '/');
-        $finishUrl    = $frontendUrl . '/invoice/' . $invoice->invoice_code;
 
         $items = collect($invoice->items)->map(fn ($item) => [
             'id'       => $item['type'] . '-' . $item['name'],
@@ -261,14 +306,8 @@ class InvoiceService
         // Pastikan total item === due_now (untuk menghindari mismatch Midtrans)
         $itemTotal = collect($items)->sum(fn ($i) => $i['price'] * $i['quantity']);
         if ($itemTotal !== (int) $invoice->due_now && (int) $invoice->due_later > 0) {
-            // DP: tambahkan adjustment agar sum item = due_now
             $diff = (int) $invoice->due_now - $itemTotal;
-            $items[] = [
-                'id'       => 'dp-adjustment',
-                'name'     => 'DP Adjustment',
-                'price'    => $diff,
-                'quantity' => 1,
-            ];
+            $items[] = ['id' => 'dp-adjustment', 'name' => 'DP Adjustment', 'price' => $diff, 'quantity' => 1];
         }
 
         $params = [
@@ -282,18 +321,15 @@ class InvoiceService
                 'phone'      => $invoice->guest_phone ?? '',
             ],
             'item_details' => $items,
-            'callbacks'    => [
-                'finish' => $finishUrl,
-            ],
             'expiry' => [
                 'unit'     => 'minutes',
-                'duration' => (int) now()->diffInMinutes($invoice->due_at, false),
+                'duration' => max(1, (int) now()->diffInMinutes($invoice->due_at, false)),
             ],
         ];
 
         try {
             $snap = \Midtrans\Snap::createTransaction($params);
-            return $snap->redirect_url;
+            return $snap->token;
         } catch (\Exception $e) {
             throw new \DomainException('Gagal menginisiasi pembayaran: ' . $e->getMessage());
         }
