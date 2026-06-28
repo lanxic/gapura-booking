@@ -22,6 +22,6 @@ class BookingAddon extends Model
 
     public function addon(): BelongsTo
     {
-        return $this->belongsTo(ActivityAddon::class, 'addon_id');
+        return $this->belongsTo(ProductAddon::class, 'addon_id');
     }
 }

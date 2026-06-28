@@ -11,27 +11,27 @@ class AccountController extends Controller
 {
     public function __construct(private readonly QrCodeService $qrCodeService) {}
 
-    public function bookings()
+    public function bookings(string $tenantSlug)
     {
         $user     = Auth::guard('web')->user();
         $bookings = Booking::where('customer_id', $user->id)
-            ->with('slot.activity')
+            ->with('slot.product')
             ->latest()
             ->paginate(10);
 
-        return view('account.bookings', compact('bookings'));
+        return view('tenant.storefront.account.bookings', compact('bookings'));
     }
 
-    public function bookingDetail(string $code)
+    public function bookingDetail(string $tenantSlug, string $code)
     {
         $user    = Auth::guard('web')->user();
         $booking = Booking::where('booking_code', $code)
             ->where('customer_id', $user->id)
-            ->with('slot.activity')
+            ->with('slot.product', 'addons', 'invoice')
             ->firstOrFail();
 
         $qrSvg = $this->qrCodeService->generate($booking->booking_code);
 
-        return view('account.booking-detail', compact('booking', 'qrSvg'));
+        return view('tenant.storefront.account.booking-detail', compact('booking', 'qrSvg'));
     }
 }

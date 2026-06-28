@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\ActivitySlot;
+use App\Models\ProductSlot;
 use App\Models\Invoice;
 use App\Models\PaymentAttempt;
 use App\Models\PaymentGateway;
@@ -21,7 +21,7 @@ class InvoiceService
      */
     public function createFromCheckout(array $data): Invoice
     {
-        $slot = ActivitySlot::lockForUpdate()->findOrFail($data['slot_id']);
+        $slot = ProductSlot::lockForUpdate()->findOrFail($data['slot_id']);
 
         if (! $slot->isAvailableFor($data['pax_count'])) {
             throw new \DomainException('Slot tidak tersedia untuk jumlah pax yang dipilih.');
@@ -36,7 +36,7 @@ class InvoiceService
         $promoCodeId = null;
 
         if (! empty($data['promo_code'])) {
-            [$discount, $promoCodeId] = $this->applyPromo($data['promo_code'], $subtotal, $slot->activity_id);
+            [$discount, $promoCodeId] = $this->applyPromo($data['promo_code'], $subtotal);
         }
 
         $total = max(0, $subtotal - $discount);
@@ -177,18 +177,18 @@ class InvoiceService
         return sprintf('INV-%s-%05d', $date, $seq);
     }
 
-    private function buildItems(ActivitySlot $slot, array $data): array
+    private function buildItems(ProductSlot $slot, array $data): array
     {
         $items = [[
-            'type'       => 'activity',
-            'name'       => $slot->activity->name,
+            'type'       => 'product',
+            'name'       => $slot->product->name,
             'unit_price' => $slot->price,
             'quantity'   => $data['pax_count'],
             'subtotal'   => $slot->price * $data['pax_count'],
         ]];
 
         foreach ($data['addons'] ?? [] as $addon) {
-            $addonModel = \App\Models\ActivityAddon::find($addon['addon_id']);
+            $addonModel = \App\Models\ProductAddon::find($addon['addon_id']);
             if (! $addonModel) continue;
             $items[] = [
                 'type'       => 'addon',
@@ -202,7 +202,7 @@ class InvoiceService
         return $items;
     }
 
-    private function applyPromo(string $code, int $amount, int $activityId): array
+    private function applyPromo(string $code, int $amount): array
     {
         $promo = PromoCode::where('code', strtoupper($code))->first();
 

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login Admin — Amartha eTicket</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     @vite(['resources/scss/admin.scss', 'resources/js/admin.js'])
 </head>
 <body class="bg-light d-flex align-items-center justify-content-center min-vh-100">
@@ -29,9 +30,15 @@
                         <input type="email" name="email" class="form-control"
                                value="{{ old('email') }}" required autofocus>
                     </div>
-                    <div class="mb-4">
+                    <div class="mb-4" x-data="{ show: false }">
                         <label class="form-label fw-semibold small">Password</label>
-                        <input type="password" name="password" class="form-control" required>
+                        <div class="input-group">
+                            <input :type="show ? 'text' : 'password'" name="password" class="form-control" required>
+                            <button type="button" class="btn btn-outline-secondary" @click="show = !show" tabindex="-1">
+                                <i class="bi bi-eye" x-show="!show"></i>
+                                <i class="bi bi-eye-slash" x-show="show" x-cloak></i>
+                            </button>
+                        </div>
                     </div>
                     <button type="submit" class="btn btn-primary w-100 fw-semibold">Masuk</button>
                 </form>

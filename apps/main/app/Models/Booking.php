@@ -13,7 +13,7 @@ class Booking extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'booking_code', 'invoice_id', 'slot_id', 'customer_id',
+        'tenant_id', 'booking_code', 'invoice_id', 'slot_id', 'customer_id',
         'guest_name', 'guest_email', 'guest_phone', 'pax_count',
         'status', 'notes', 'total_amount', 'paid_amount', 'payment_status',
         'qr_code_token', 'qr_code_path', 'confirmed_at',
@@ -26,6 +26,11 @@ class Booking extends Model
         'confirmed_at' => 'datetime',
     ];
 
+    public function tenant(): BelongsTo
+    {
+        return $this->belongsTo(Tenant::class);
+    }
+
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class);
@@ -33,7 +38,7 @@ class Booking extends Model
 
     public function slot(): BelongsTo
     {
-        return $this->belongsTo(ActivitySlot::class, 'slot_id');
+        return $this->belongsTo(ProductSlot::class, 'slot_id');
     }
 
     public function customer(): BelongsTo

@@ -21,10 +21,22 @@ class AdminAuthController extends Controller
             'password' => ['required'],
         ]);
 
+        $isTenant   = app()->bound('current_tenant');
+        $allowedRoles = $isTenant
+            ? ['tenant_admin', 'scanner', 'super_admin']
+            : ['super_admin', 'admin'];
+
         $user = User::where('email', $credentials['email'])->first();
 
-        if (!$user || !in_array($user->role->value, ['super_admin', 'admin'])) {
+        if (!$user || !in_array($user->role->value, $allowedRoles)) {
             return back()->withErrors(['email' => 'Akun admin tidak ditemukan.'])->onlyInput('email');
+        }
+
+        if ($isTenant) {
+            $tenant = app('current_tenant');
+            if (!in_array($user->role->value, ['super_admin']) && $user->tenant_id !== $tenant->id) {
+                return back()->withErrors(['email' => 'Akun tidak terdaftar di tenant ini.'])->onlyInput('email');
+            }
         }
 
         if (!$user->is_active) {
@@ -37,7 +49,8 @@ class AdminAuthController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->route('admin.dashboard');
+        $dashboardRoute = $isTenant ? 'tenant.admin.dashboard' : 'admin.dashboard';
+        return redirect()->route($dashboardRoute);
     }
 
     public function logout(Request $request)
@@ -46,6 +59,7 @@ class AdminAuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('admin.login');
+        $loginRoute = app()->bound('current_tenant') ? 'tenant.admin.login' : 'admin.login';
+        return redirect()->route($loginRoute);
     }
 }

@@ -4,18 +4,19 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
-class Activity extends Model
+class Product extends Model
 {
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'name', 'slug', 'category', 'description', 'duration_minutes',
-        'min_pax', 'max_pax', 'level', 'min_age', 'base_price', 'status', 'is_featured', 'meta',
+        'tenant_id', 'name', 'slug', 'type', 'category', 'description',
+        'duration_minutes', 'min_pax', 'max_pax', 'level', 'min_age',
+        'price_adult', 'price_child', 'status', 'is_featured', 'meta',
     ];
 
     protected $casts = [
@@ -25,27 +26,33 @@ class Activity extends Model
         'min_pax'          => 'integer',
         'max_pax'          => 'integer',
         'min_age'          => 'integer',
-        'base_price'       => 'integer',
+        'price_adult'      => 'integer',
+        'price_child'      => 'integer',
     ];
+
+    public function tenant(): BelongsTo
+    {
+        return $this->belongsTo(Tenant::class);
+    }
 
     public function schedules(): HasMany
     {
-        return $this->hasMany(ActivitySchedule::class);
+        return $this->hasMany(ProductSchedule::class);
     }
 
     public function slots(): HasMany
     {
-        return $this->hasMany(ActivitySlot::class);
+        return $this->hasMany(ProductSlot::class);
     }
 
     public function addons(): HasMany
     {
-        return $this->hasMany(ActivityAddon::class);
+        return $this->hasMany(ProductAddon::class);
     }
 
     public function media(): HasMany
     {
-        return $this->hasMany(ActivityMedia::class)->orderBy('sort_order');
+        return $this->hasMany(ProductMedia::class)->orderBy('sort_order');
     }
 
     public function getIsActiveAttribute(): bool

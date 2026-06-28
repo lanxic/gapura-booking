@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\CheckRole;
+use App\Http\Middleware\IdentifyTenant;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -22,7 +23,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Alias middleware
         $middleware->alias([
-            'role' => CheckRole::class,
+            'role'            => CheckRole::class,
+            'tenant.identify' => IdentifyTenant::class,
         ]);
 
         // Web routes: redirect unauthenticated to login

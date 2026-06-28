@@ -12,7 +12,13 @@ class UserAdminController extends Controller
 {
     public function index()
     {
-        $users = User::whereIn('role', [UserRole::super_admin, UserRole::admin, UserRole::scanner])
+        $users = User::whereIn('role', [
+                UserRole::SuperAdmin,
+                UserRole::Admin,
+                UserRole::TenantAdmin,
+                UserRole::Scanner,
+            ])
+            ->with('tenant:id,name')
             ->latest()
             ->paginate(20);
 
@@ -30,13 +36,22 @@ class UserAdminController extends Controller
             'name'     => ['required', 'string'],
             'email'    => ['required', 'email', 'unique:users,email'],
             'password' => ['required', 'min:8'],
-            'role'     => ['required', 'in:super_admin,admin,scanner'],
+            'role'      => ['required', 'in:super_admin,admin,tenant_admin,scanner'],
+            'tenant_id' => ['nullable', 'exists:tenants,id'],
             'phone'    => ['nullable', 'string'],
         ]);
 
+        $tenantId = in_array($data['role'], ['tenant_admin', 'scanner'])
+            ? ($data['tenant_id'] ?? null)
+            : null;
+
         User::create([
-            ...$data,
+            'name'      => $data['name'],
+            'email'     => $data['email'],
             'password'  => Hash::make($data['password']),
+            'role'      => $data['role'],
+            'phone'     => $data['phone'] ?? null,
+            'tenant_id' => $tenantId,
             'is_active' => true,
         ]);
 
@@ -52,12 +67,19 @@ class UserAdminController extends Controller
     {
         $data = $request->validate([
             'name'  => ['required', 'string'],
-            'role'  => ['required', 'in:super_admin,admin,scanner'],
+            'role'      => ['required', 'in:super_admin,admin,tenant_admin,scanner'],
+            'tenant_id' => ['nullable', 'exists:tenants,id'],
             'phone' => ['nullable', 'string'],
         ]);
 
         if ($request->filled('password')) {
             $data['password'] = Hash::make($request->password);
+        }
+
+        if (in_array($data['role'], ['tenant_admin', 'scanner'])) {
+            $data['tenant_id'] = $data['tenant_id'] ?? $user->tenant_id;
+        } else {
+            $data['tenant_id'] = null;
         }
 
         $user->update($data);

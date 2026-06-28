@@ -16,7 +16,7 @@ return new class extends Migration
 
             // Relasi 1-to-1 dengan invoice (yang dibuat lebih dulu)
             $table->foreignId('invoice_id')->unique()->constrained('invoices');
-            $table->foreignId('slot_id')->constrained('activity_slots');
+            $table->foreignId('slot_id')->constrained('product_slots');
             $table->foreignId('customer_id')->nullable()->constrained('customers')->nullOnDelete();
 
             // Data tamu (disalin dari invoice agar tetap ada walau customer hapus akun)
@@ -51,7 +51,7 @@ return new class extends Migration
         Schema::create('booking_addons', function (Blueprint $table) {
             $table->id();
             $table->foreignId('booking_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('addon_id')->constrained('activity_addons');
+            $table->foreignId('addon_id')->constrained('product_addons');
             $table->unsignedSmallInteger('quantity');
             $table->unsignedBigInteger('unit_price'); // snapshot harga saat booking
             $table->unsignedBigInteger('subtotal');

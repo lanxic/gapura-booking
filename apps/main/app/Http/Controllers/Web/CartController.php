@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
-use App\Models\ActivitySlot;
+use App\Models\ProductSlot;
 use App\Services\CartService;
 use Illuminate\Http\Request;
 
@@ -11,17 +11,23 @@ class CartController extends Controller
 {
     public function __construct(private readonly CartService $cart) {}
 
+    private function isTenant(): bool
+    {
+        return app()->bound('current_tenant');
+    }
+
     public function index()
     {
         $items      = $this->cart->items();
         $grandTotal = $this->cart->grandTotal();
-        return view('cart.index', compact('items', 'grandTotal'));
+        $view = $this->isTenant() ? 'tenant.storefront.cart.index' : 'cart.index';
+        return view($view, compact('items', 'grandTotal'));
     }
 
     public function add(Request $request)
     {
         $data = $request->validate([
-            'slot_id'     => 'required|exists:activity_slots,id',
+            'slot_id'     => 'required|exists:product_slots,id',
             'pax_adult'   => 'required|integer|min:0',
             'pax_child'   => 'required|integer|min:0',
             'addons_json' => 'nullable|string',
@@ -32,7 +38,7 @@ class CartController extends Controller
             return back()->with('error', 'Pilih minimal 1 peserta.');
         }
 
-        $slot = ActivitySlot::findOrFail($data['slot_id']);
+        $slot = ProductSlot::findOrFail($data['slot_id']);
         if (!$slot->isAvailableFor($pax)) {
             return back()->with('error', 'Slot tidak tersedia untuk jumlah peserta yang dipilih.');
         }
@@ -44,18 +50,23 @@ class CartController extends Controller
             $data['addons_json'] ?? '[]',
         );
 
-        return redirect()->route('cart.index');
+        $cartRoute = $this->isTenant() ? 'tenant.cart.index' : 'cart.index';
+        return redirect()->route($cartRoute);
     }
 
-    public function remove(int $index)
+    public function remove(string $tenantSlugOrIndex, ?int $index = null)
     {
-        $this->cart->remove($index);
+        // When called from tenant domain, tenantSlugOrIndex = tenantSlug, index = actual index
+        // When called from main domain, tenantSlugOrIndex = the index itself (as string)
+        $actualIndex = $index !== null ? $index : (int) $tenantSlugOrIndex;
+        $this->cart->remove($actualIndex);
         return back();
     }
 
     public function clear()
     {
         $this->cart->clear();
-        return redirect()->route('activities.index');
+        $homeRoute = $this->isTenant() ? 'tenant.home' : 'home';
+        return redirect()->route($homeRoute);
     }
 }

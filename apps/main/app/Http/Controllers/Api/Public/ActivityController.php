@@ -3,22 +3,17 @@
 namespace App\Http\Controllers\Api\Public;
 
 use App\Http\Controllers\Controller;
-use App\Models\Activity;
-use App\Models\ActivitySlot;
+use App\Models\Product;
+use App\Models\ProductSlot;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
 class ActivityController extends Controller
 {
-    /**
-     * GET /api/v1/activities
-     * Katalog aktivitas dengan filter & sort (PRD Section 4.1.1).
-     */
     public function index(Request $request): JsonResponse
     {
-        $query = Activity::with(['media' => fn ($q) => $q->where('is_primary', true)])
-            ->active();
+        $query = Product::with(['media' => fn ($q) => $q->where('is_primary', true)])->active();
 
         if ($request->filled('category')) {
             $query->where('category', $request->category);
@@ -37,7 +32,6 @@ class ActivityController extends Controller
         }
 
         $sortMap = [
-            'popularity' => ['booked_count', 'desc'],  // subquery jika diperlukan
             'price_asc'  => ['base_price', 'asc'],
             'price_desc' => ['base_price', 'desc'],
             'newest'     => ['created_at', 'desc'],
@@ -45,59 +39,50 @@ class ActivityController extends Controller
         [$col, $dir] = $sortMap[$request->query('sort', 'newest')] ?? ['created_at', 'desc'];
         $query->orderBy($col, $dir);
 
-        $activities = $query->paginate(12)->through(fn ($a) => [
-            'id'               => $a->id,
-            'name'             => $a->name,
-            'slug'             => $a->slug,
-            'category'         => $a->category,
-            'duration_minutes' => $a->duration_minutes,
-            'base_price'       => $a->base_price,
-            'level'            => $a->level,
-            'min_pax'          => $a->min_pax,
-            'max_pax'          => $a->max_pax,
-            'image'            => $a->media->first()?->url,
+        $products = $query->paginate(12)->through(fn ($p) => [
+            'id'               => $p->id,
+            'name'             => $p->name,
+            'slug'             => $p->slug,
+            'category'         => $p->category,
+            'duration_minutes' => $p->duration_minutes,
+            'base_price'       => $p->base_price,
+            'level'            => $p->level,
+            'min_pax'          => $p->min_pax,
+            'max_pax'          => $p->max_pax,
+            'image'            => $p->media->first()?->url,
         ]);
 
-        return response()->json($activities);
+        return response()->json($products);
     }
 
-    /**
-     * GET /api/v1/activities/{slug}
-     * Detail aktivitas lengkap + kalender availability (PRD Section 4.1.2).
-     */
     public function show(string $slug): JsonResponse
     {
-        $activity = Activity::with(['media', 'addons' => fn ($q) => $q->where('is_active', true)])
+        $product = Product::with(['media', 'addons' => fn ($q) => $q->where('is_active', true)])
             ->active()
             ->where('slug', $slug)
             ->firstOrFail();
 
         return response()->json(['data' => [
-            'id'               => $activity->id,
-            'name'             => $activity->name,
-            'slug'             => $activity->slug,
-            'category'         => $activity->category,
-            'description'      => $activity->description,
-            'duration_minutes' => $activity->duration_minutes,
-            'min_pax'          => $activity->min_pax,
-            'max_pax'          => $activity->max_pax,
-            'level'            => $activity->level,
-            'min_age'          => $activity->min_age,
-            'base_price'       => $activity->base_price,
-            'meta'             => $activity->meta,
-            'media'            => $activity->media->map(fn ($m) => ['url' => $m->url, 'is_primary' => $m->is_primary]),
-            'addons'           => $activity->addons->map(fn ($a) => [
+            'id'               => $product->id,
+            'name'             => $product->name,
+            'slug'             => $product->slug,
+            'category'         => $product->category,
+            'description'      => $product->description,
+            'duration_minutes' => $product->duration_minutes,
+            'min_pax'          => $product->min_pax,
+            'max_pax'          => $product->max_pax,
+            'level'            => $product->level,
+            'min_age'          => $product->min_age,
+            'base_price'       => $product->base_price,
+            'meta'             => $product->meta,
+            'media'            => $product->media->map(fn ($m) => ['url' => $m->url, 'is_primary' => $m->is_primary]),
+            'addons'           => $product->addons->map(fn ($a) => [
                 'id' => $a->id, 'name' => $a->name, 'price' => $a->price,
                 'unit' => $a->unit, 'max_qty' => $a->max_qty,
             ]),
         ]]);
     }
 
-    /**
-     * GET /api/v1/activities/{slug}/slots?date=YYYY-MM-DD&pax=2
-     * Slot tersedia untuk tanggal tertentu (PRD Section 4.1.3).
-     * Cache 60 detik via Redis.
-     */
     public function slots(Request $request, string $slug): JsonResponse
     {
         $request->validate([
@@ -105,14 +90,14 @@ class ActivityController extends Controller
             'pax'  => 'sometimes|integer|min:1|max:50',
         ]);
 
-        $activity = Activity::active()->where('slug', $slug)->firstOrFail();
+        $product  = Product::active()->where('slug', $slug)->firstOrFail();
         $pax      = $request->integer('pax', 1);
         $date     = $request->query('date');
 
-        $cacheKey = "slots:{$activity->id}:{$date}:{$pax}";
+        $cacheKey = "slots:{$product->id}:{$date}:{$pax}";
 
-        $slots = Cache::remember($cacheKey, 60, function () use ($activity, $date, $pax) {
-            return ActivitySlot::where('activity_id', $activity->id)
+        $slots = Cache::remember($cacheKey, 60, function () use ($product, $date, $pax) {
+            return ProductSlot::where('product_id', $product->id)
                 ->where('date', $date)
                 ->where('status', '!=', 'cancelled')
                 ->orderBy('start_time')

@@ -46,12 +46,12 @@ Route::prefix('v1/auth')->group(function () {
     });
 });
 
-// ─── Public — Activity Booking (PRD Section 7.1) ──────────────────────────────
+// ─── Public — Product Booking (PRD Section 7.1) ──────────────────────────────
 Route::prefix('v1')->group(function () {
-    // Activities
-    Route::get('activities',              [ActivityController::class, 'index']);
-    Route::get('activities/{slug}',       [ActivityController::class, 'show']);
-    Route::get('activities/{slug}/slots', [ActivityController::class, 'slots']);
+    // Products
+    Route::get('products',              [ActivityController::class, 'index']);
+    Route::get('products/{slug}',       [ActivityController::class, 'show']);
+    Route::get('products/{slug}/slots', [ActivityController::class, 'slots']);
 
     // Invoices (PRD Section 13)
     Route::post('invoices',                                  [InvoiceController::class, 'store']);
@@ -95,11 +95,11 @@ Route::prefix('v1/admin')->middleware('auth:admin')->group(function () {
     Route::get('activity-logs/export',  [ActivityLogAdminController::class, 'export']);
     Route::get('activity-logs/summary', [ActivityLogAdminController::class, 'summary']);
 
-    // Activities + Slots
-    Route::apiResource('activities', ActivityAdminController::class);
-    Route::post('activities/{id}/generate-slots',   [ActivityAdminController::class, 'generateSlots']);
-    Route::get('activities/{id}/slots',             [ActivityAdminController::class, 'slotsIndex']);
-    Route::put('slots/{slotId}',                    [ActivityAdminController::class, 'slotUpdate']);
+    // Products + Slots
+    Route::apiResource('products', ActivityAdminController::class);
+    Route::post('products/{id}/generate-slots',   [ActivityAdminController::class, 'generateSlots']);
+    Route::get('products/{id}/slots',             [ActivityAdminController::class, 'slotsIndex']);
+    Route::put('slots/{slotId}',                  [ActivityAdminController::class, 'slotUpdate']);
 
     // Bookings
     Route::get('bookings',         [BookingAdminController::class, 'index']);

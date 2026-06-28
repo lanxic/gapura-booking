@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('activities', function (Blueprint $table) {
+        Schema::table('products', function (Blueprint $table) {
             $table->boolean('is_featured')->default(false)->after('status');
             $table->index('is_featured');
         });
@@ -16,7 +16,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('activities', function (Blueprint $table) {
+        Schema::table('products', function (Blueprint $table) {
             $table->dropIndex(['is_featured']);
             $table->dropColumn('is_featured');
         });

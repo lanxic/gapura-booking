@@ -19,9 +19,9 @@ class BookingAdminController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $bookings = Booking::with(['slot.activity', 'customer'])
+        $bookings = Booking::with(['slot.product', 'customer'])
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
-            ->when($request->filled('activity_id'), fn ($q) => $q->whereHas('slot', fn ($s) => $s->where('activity_id', $request->activity_id)))
+            ->when($request->filled('product_id'), fn ($q) => $q->whereHas('slot', fn ($s) => $s->where('product_id', $request->product_id)))
             ->when($request->filled('date'), fn ($q) => $q->whereHas('slot', fn ($s) => $s->whereDate('date', $request->date)))
             ->when($request->filled('booking_date'), fn ($q) => $q->whereDate('created_at', $request->booking_date))
             ->when($request->filled('guest'), fn ($q) => $q->where('guest_name', 'like', '%' . $request->guest . '%')
@@ -38,7 +38,7 @@ class BookingAdminController extends Controller
      */
     public function show(int $id): JsonResponse
     {
-        $booking = Booking::with(['slot.activity', 'customer', 'addons.addon', 'participants', 'invoice.paymentAttempts'])
+        $booking = Booking::with(['slot.product', 'customer', 'addons.addon', 'participants', 'invoice.paymentAttempts'])
             ->findOrFail($id);
 
         return response()->json(['data' => $booking]);
@@ -68,7 +68,7 @@ class BookingAdminController extends Controller
     public function storeManual(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'slot_id'        => 'required|integer|exists:activity_slots,id',
+            'slot_id'        => 'required|integer|exists:product_slots,id',
             'guest_name'     => 'required|string',
             'guest_email'    => 'required|email',
             'guest_phone'    => 'nullable|string',
@@ -77,7 +77,7 @@ class BookingAdminController extends Controller
             'payment_method' => 'nullable|string|in:cash,bank_transfer,manual',
         ]);
 
-        $slot    = \App\Models\ActivitySlot::with('activity')->findOrFail($data['slot_id']);
+        $slot    = \App\Models\ProductSlot::with('product')->findOrFail($data['slot_id']);
         $gateway = $data['payment_method'] ?? 'cash';
         $total   = $slot->price * $data['pax_count'];
 
@@ -90,7 +90,7 @@ class BookingAdminController extends Controller
             'pax_count'        => $data['pax_count'],
             'items'            => [[
                 'type'       => 'activity',
-                'name'       => $slot->activity->name,
+                'name'       => $slot->product->name,
                 'unit_price' => $slot->price,
                 'quantity'   => $data['pax_count'],
                 'subtotal'   => $total,
@@ -110,7 +110,7 @@ class BookingAdminController extends Controller
 
         $booking = $this->bookingService->createFromInvoice($invoice);
 
-        return response()->json(['data' => $booking->load('slot.activity')], 201);
+        return response()->json(['data' => $booking->load('slot.product')], 201);
     }
 
     /**
@@ -119,7 +119,7 @@ class BookingAdminController extends Controller
      */
     public function export(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
     {
-        $bookings = Booking::with(['slot.activity'])
+        $bookings = Booking::with(['slot.product'])
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
             ->when($request->filled('date'), fn ($q) => $q->whereHas('slot', fn ($s) => $s->whereDate('date', $request->date)))
             ->orderByDesc('created_at')
@@ -132,7 +132,7 @@ class BookingAdminController extends Controller
 
         return response()->stream(function () use ($bookings) {
             $fp = fopen('php://output', 'w');
-            fputcsv($fp, ['Booking Code', 'Activity', 'Date', 'Time', 'Guest', 'Email', 'Pax', 'Status', 'Total']);
+            fputcsv($fp, ['Booking Code', 'Product', 'Date', 'Time', 'Guest', 'Email', 'Pax', 'Status', 'Total']);
             foreach ($bookings as $b) {
                 fputcsv($fp, [
                     $b->booking_code,

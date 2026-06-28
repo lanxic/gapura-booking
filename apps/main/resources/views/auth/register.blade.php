@@ -6,7 +6,11 @@
     <h5 class="fw-bold mb-1">Buat Akun Baru</h5>
     <p class="text-muted small mb-4">Daftar untuk mulai memesan tiket aktivitas.</p>
 
-    <form method="POST" action="{{ route('register') }}">
+    @php
+        $registerPostRoute = app()->bound('current_tenant') ? route('tenant.register') : route('register');
+        $loginRoute        = app()->bound('current_tenant') ? route('tenant.login')    : route('login');
+    @endphp
+    <form method="POST" action="{{ $registerPostRoute }}">
         @csrf
 
         <div class="mb-3">
@@ -36,18 +40,32 @@
             @enderror
         </div>
 
-        <div class="mb-3">
+        <div class="mb-3" x-data="{ show: false }">
             <label class="form-label fw-semibold small">Password</label>
-            <input type="password" name="password" class="form-control @error('password') is-invalid @enderror"
-                   placeholder="Minimal 8 karakter" required>
+            <div class="input-group">
+                <input :type="show ? 'text' : 'password'" name="password"
+                       class="form-control @error('password') is-invalid @enderror"
+                       placeholder="Minimal 8 karakter" required>
+                <button type="button" class="btn btn-outline-secondary" @click="show = !show" tabindex="-1">
+                    <i class="bi bi-eye" x-show="!show"></i>
+                    <i class="bi bi-eye-slash" x-show="show" x-cloak></i>
+                </button>
+            </div>
             @error('password')
-                <div class="invalid-feedback">{{ $message }}</div>
+                <div class="invalid-feedback d-block">{{ $message }}</div>
             @enderror
         </div>
 
-        <div class="mb-4">
+        <div class="mb-4" x-data="{ show: false }">
             <label class="form-label fw-semibold small">Konfirmasi Password</label>
-            <input type="password" name="password_confirmation" class="form-control" placeholder="Ulangi password" required>
+            <div class="input-group">
+                <input :type="show ? 'text' : 'password'" name="password_confirmation"
+                       class="form-control" placeholder="Ulangi password" required>
+                <button type="button" class="btn btn-outline-secondary" @click="show = !show" tabindex="-1">
+                    <i class="bi bi-eye" x-show="!show"></i>
+                    <i class="bi bi-eye-slash" x-show="show" x-cloak></i>
+                </button>
+            </div>
         </div>
 
         <button type="submit" class="btn btn-primary w-100">Buat Akun</button>
@@ -55,6 +73,6 @@
 
     <hr class="my-4">
     <p class="text-center small mb-0">
-        Sudah punya akun? <a href="{{ route('login') }}" class="text-primary fw-semibold">Masuk di sini</a>
+        Sudah punya akun? <a href="{{ $loginRoute }}" class="text-primary fw-semibold">Masuk di sini</a>
     </p>
 @endsection

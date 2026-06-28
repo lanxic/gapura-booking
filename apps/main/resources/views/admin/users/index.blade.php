@@ -17,6 +17,7 @@
                 <th>Nama</th>
                 <th>Email</th>
                 <th>Role</th>
+                <th>Tenant</th>
                 <th>Status</th>
                 <th class="text-end">Aksi</th>
             </tr>
@@ -26,7 +27,21 @@
             <tr>
                 <td class="fw-semibold">{{ $user->name }}</td>
                 <td>{{ $user->email }}</td>
-                <td><span class="badge bg-primary">{{ $user->role->value }}</span></td>
+                <td>
+                    @php
+                        $roleColor = match($user->role->value) {
+                            'super_admin'  => 'bg-danger',
+                            'admin'        => 'bg-warning text-dark',
+                            'tenant_admin' => 'bg-primary',
+                            'scanner'      => 'bg-info text-dark',
+                            default        => 'bg-secondary',
+                        };
+                    @endphp
+                    <span class="badge {{ $roleColor }}">{{ $user->role->value }}</span>
+                </td>
+                <td class="text-muted small">
+                    {{ $user->tenant?->name ?? '—' }}
+                </td>
                 <td>
                     <span class="badge {{ $user->is_active ? 'bg-success' : 'bg-secondary' }}">
                         {{ $user->is_active ? 'Aktif' : 'Nonaktif' }}
@@ -42,7 +57,7 @@
                 </td>
             </tr>
             @empty
-            <tr><td colspan="5" class="text-center text-muted py-4">Belum ada user.</td></tr>
+            <tr><td colspan="6" class="text-center text-muted py-4">Belum ada user.</td></tr>
             @endforelse
         </tbody>
     </table>

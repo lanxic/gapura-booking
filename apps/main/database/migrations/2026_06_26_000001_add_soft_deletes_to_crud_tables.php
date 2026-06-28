@@ -7,10 +7,10 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     private array $tables = [
-        'activity_slots',
-        'activity_schedules',
-        'activity_addons',
-        'activity_media',
+        'product_slots',
+        'product_schedules',
+        'product_addons',
+        'product_media',
         'invoices',
         'promo_codes',
         'payment_gateways',

@@ -3,9 +3,10 @@
 namespace App\Http\Controllers\Web\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Activity;
 use App\Models\Booking;
 use App\Models\Invoice;
+use App\Models\Product;
+use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 
@@ -17,7 +18,8 @@ class DashboardController extends Controller
             'total_bookings'  => Booking::count(),
             'total_revenue'   => Invoice::where('status', 'paid')->sum('total_amount'),
             'total_customers' => User::where('role', 'customer')->count(),
-            'total_activities'=> Activity::where('is_active', true)->count(),
+            'total_products'  => Product::active()->count(),
+            'total_tenants'   => Tenant::active()->count(),
         ];
 
         $revenueChart = collect(range(6, 0))->map(function ($daysAgo) {
@@ -30,7 +32,7 @@ class DashboardController extends Controller
             ];
         });
 
-        $recentBookings = Booking::with('slot.activity')
+        $recentBookings = Booking::with('slot.product', 'slot.product.tenant')
             ->latest()
             ->take(5)
             ->get();

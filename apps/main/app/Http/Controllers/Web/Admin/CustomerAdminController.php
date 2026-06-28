@@ -12,7 +12,7 @@ class CustomerAdminController extends Controller
 {
     public function index(Request $request)
     {
-        $customers = User::where('role', UserRole::customer)
+        $customers = User::where('role', UserRole::Customer)
             ->when($request->search, fn($q) =>
                 $q->where('name', 'like', "%{$request->search}%")
                   ->orWhere('email', 'like', "%{$request->search}%"))
@@ -38,7 +38,7 @@ class CustomerAdminController extends Controller
             'phone' => ['nullable', 'string'],
         ]);
 
-        User::create([...$data, 'role' => UserRole::customer, 'password' => Hash::make('password'), 'is_active' => true]);
+        User::create([...$data, 'role' => UserRole::Customer, 'password' => Hash::make('password'), 'is_active' => true]);
 
         return redirect()->route('admin.customers.index')->with('success', 'Customer berhasil dibuat.');
     }
@@ -75,7 +75,7 @@ class CustomerAdminController extends Controller
 
     public function export()
     {
-        $customers = User::where('role', UserRole::customer)->get();
+        $customers = User::where('role', UserRole::Customer)->get();
 
         $csv = "Name,Email,Phone,Active,Joined\n";
         foreach ($customers as $c) {

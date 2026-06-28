@@ -23,9 +23,9 @@ class Offer extends Model
         'is_active'      => 'boolean',
     ];
 
-    public function activities(): BelongsToMany
+    public function products(): BelongsToMany
     {
-        return $this->belongsToMany(Activity::class, 'offer_activities');
+        return $this->belongsToMany(Product::class, 'offer_products');
     }
 
     public function promoCodes(): HasMany

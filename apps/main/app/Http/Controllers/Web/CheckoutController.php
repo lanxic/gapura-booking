@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
-use App\Models\ActivityAddon;
-use App\Models\ActivitySlot;
+use App\Models\ProductAddon;
+use App\Models\ProductSlot;
 use App\Services\CartService;
 use App\Services\InvoiceService;
 use Illuminate\Http\Request;
@@ -21,24 +21,23 @@ class CheckoutController extends Controller
     public function index(Request $request)
     {
         $user = Auth::guard('web')->user();
+        $view = $this->checkoutView();
 
-        // ── Cart checkout mode ─────────────────────────────────────────────
         if (!$this->cart->isEmpty()) {
             $items      = $this->cart->items();
             $grandTotal = $this->cart->grandTotal();
-            return view('checkout.index', compact('items', 'grandTotal', 'user'));
+            return view($view, compact('items', 'grandTotal', 'user'));
         }
 
-        // ── Single-item mode (direct from activity page) ───────────────────
         $slotId     = $request->get('slot_id');
         $pax        = (int) $request->get('pax', 1);
         $addonsJson = $request->get('addons', '[]');
 
         if (!$slotId) {
-            return redirect()->route('activities.index')->with('error', 'Pilih slot aktivitas terlebih dahulu.');
+            return back()->with('error', 'Pilih slot terlebih dahulu.');
         }
 
-        $slot = ActivitySlot::with('activity')->findOrFail($slotId);
+        $slot = ProductSlot::with('product')->findOrFail($slotId);
 
         if (!$slot->isAvailableFor($pax)) {
             return back()->with('error', 'Slot tidak tersedia.');
@@ -47,21 +46,19 @@ class CheckoutController extends Controller
         $addonItems = $this->resolveAddonItems($addonsJson);
         $grandTotal = ($slot->price * $pax) + $addonItems->sum('subtotal');
 
-        return view('checkout.index', compact('slot', 'pax', 'addonItems', 'addonsJson', 'grandTotal', 'user'));
+        return view($view, compact('slot', 'pax', 'addonItems', 'addonsJson', 'grandTotal', 'user'));
     }
 
     public function store(Request $request)
     {
         $user = Auth::guard('web')->user();
 
-        // ── Cart checkout ──────────────────────────────────────────────────
         if ($request->boolean('cart_checkout') && !$this->cart->isEmpty()) {
             return $this->storeFromCart($request, $user);
         }
 
-        // ── Single-item checkout ───────────────────────────────────────────
         $data = $request->validate([
-            'slot_id'        => ['required', 'exists:activity_slots,id'],
+            'slot_id'        => ['required', 'exists:product_slots,id'],
             'pax_count'      => ['required', 'integer', 'min:1'],
             'guest_name'     => ['required', 'string', 'max:255'],
             'guest_email'    => ['required', 'email'],
@@ -84,7 +81,7 @@ class CheckoutController extends Controller
             return back()->with('error', $e->getMessage())->withInput();
         }
 
-        return redirect()->route('invoice.show', $invoice->invoice_code);
+        return $this->invoiceRedirect($invoice->invoice_code);
     }
 
     private function storeFromCart(Request $request, $user)
@@ -105,10 +102,10 @@ class CheckoutController extends Controller
             DB::transaction(function () use ($items, $data, $user, &$invoices) {
                 foreach ($items as $item) {
                     $invoiceData = array_merge($data, [
-                        'slot_id'        => $item['slot_id'],
-                        'pax_count'      => $item['pax'],
-                        'addons'         => $this->decodeAddonsJson($item['addons_json']),
-                        'customer_id'    => $user?->id,
+                        'slot_id'     => $item['slot_id'],
+                        'pax_count'   => $item['pax'],
+                        'addons'      => $this->decodeAddonsJson($item['addons_json']),
+                        'customer_id' => $user?->id,
                     ]);
                     $invoices[] = $this->invoiceService->createFromCheckout($invoiceData);
                 }
@@ -120,11 +117,26 @@ class CheckoutController extends Controller
         $this->cart->clear();
 
         if (count($invoices) === 1) {
-            return redirect()->route('invoice.show', $invoices[0]->invoice_code);
+            return $this->invoiceRedirect($invoices[0]->invoice_code);
         }
 
-        return redirect()->route('account.bookings')
+        $bookingsRoute = app()->bound('current_tenant') ? 'tenant.account.bookings' : 'account.bookings';
+        return redirect()->route($bookingsRoute)
             ->with('success', count($invoices) . ' tiket berhasil dipesan!');
+    }
+
+    private function checkoutView(): string
+    {
+        return app()->bound('current_tenant')
+            ? 'tenant.storefront.checkout.index'
+            : 'checkout.index';
+    }
+
+    private function invoiceRedirect(string $code): \Illuminate\Http\RedirectResponse
+    {
+        return app()->bound('current_tenant')
+            ? redirect()->route('tenant.invoice.show', $code)
+            : redirect()->route('invoice.show', $code);
     }
 
     private function resolveAddonItems(string $json): \Illuminate\Support\Collection
@@ -135,7 +147,7 @@ class CheckoutController extends Controller
         return collect($decoded)
             ->filter(fn($a) => !empty($a['addon_id']) && ($a['quantity'] ?? 0) > 0)
             ->map(function ($a) {
-                $model = ActivityAddon::find($a['addon_id']);
+                $model = ProductAddon::find($a['addon_id']);
                 if (!$model) return null;
                 return [
                     'id'       => $model->id,

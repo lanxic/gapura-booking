@@ -16,7 +16,7 @@ class OfferController extends Controller
      */
     public function index(): JsonResponse
     {
-        $offers = Offer::active()->with('activities:id,name,slug')->paginate(12)
+        $offers = Offer::active()->with('products:id,name,slug')->paginate(12)
             ->through(fn ($o) => [
                 'id'             => $o->id,
                 'title'          => $o->title,
@@ -27,7 +27,7 @@ class OfferController extends Controller
                 'discount_type'  => $o->discount_type,
                 'discount_value' => $o->discount_value,
                 'badge'          => $o->badge,
-                'activities'     => $o->activities->map(fn ($a) => ['name' => $a->name, 'slug' => $a->slug]),
+                'products'     => $o->products->map(fn ($a) => ['name' => $a->name, 'slug' => $a->slug]),
             ]);
 
         return response()->json($offers);
@@ -39,7 +39,7 @@ class OfferController extends Controller
      */
     public function show(string $slug): JsonResponse
     {
-        $offer = Offer::active()->with('activities:id,name,slug')->where('slug', $slug)->firstOrFail();
+        $offer = Offer::active()->with('products:id,name,slug')->where('slug', $slug)->firstOrFail();
 
         return response()->json(['data' => [
             'id'             => $offer->id,
@@ -52,7 +52,7 @@ class OfferController extends Controller
             'discount_type'  => $offer->discount_type,
             'discount_value' => $offer->discount_value,
             'badge'          => $offer->badge,
-            'activities'     => $offer->activities->map(fn ($a) => ['name' => $a->name, 'slug' => $a->slug]),
+            'products'     => $offer->products->map(fn ($a) => ['name' => $a->name, 'slug' => $a->slug]),
         ]]);
     }
 
@@ -65,7 +65,7 @@ class OfferController extends Controller
         $data = $request->validate([
             'code'        => 'required|string',
             'amount'      => 'required|integer|min:1',
-            'activity_id' => 'nullable|integer',
+            'product_id'  => 'nullable|integer',
         ]);
 
         $promo = PromoCode::where('code', strtoupper($data['code']))->first();

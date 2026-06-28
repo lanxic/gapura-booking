@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('guest_phone', 20)->nullable();
 
             // Slot yang dipesan
-            $table->foreignId('checkout_slot_id')->constrained('activity_slots');
+            $table->foreignId('checkout_slot_id')->constrained('product_slots');
             $table->unsignedSmallInteger('pax_count');
 
             // Snapshot harga saat checkout (tidak berubah meski harga naik)

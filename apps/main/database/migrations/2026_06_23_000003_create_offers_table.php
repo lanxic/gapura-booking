@@ -26,11 +26,10 @@ return new class extends Migration
             $table->index(['is_active', 'start_date', 'end_date']);
         });
 
-        // Relasi many-to-many antara offer dan activity
-        Schema::create('offer_activities', function (Blueprint $table) {
+        Schema::create('offer_products', function (Blueprint $table) {
             $table->foreignId('offer_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('activity_id')->constrained()->cascadeOnDelete();
-            $table->primary(['offer_id', 'activity_id']);
+            $table->foreignId('product_id')->constrained()->cascadeOnDelete();
+            $table->primary(['offer_id', 'product_id']);
         });
 
         Schema::create('promo_codes', function (Blueprint $table) {
@@ -53,7 +52,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('promo_codes');
-        Schema::dropIfExists('offer_activities');
+        Schema::dropIfExists('offer_products');
         Schema::dropIfExists('offers');
     }
 };

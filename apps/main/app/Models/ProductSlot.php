@@ -7,13 +7,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class ActivitySlot extends Model
+class ProductSlot extends Model
 {
     use SoftDeletes;
 
     protected $fillable = [
-        'activity_id', 'schedule_id', 'date', 'start_time', 'end_time',
-        'capacity', 'booked_count', 'price', 'status',
+        'tenant_id', 'product_id', 'schedule_id', 'date', 'start_time', 'end_time',
+        'capacity', 'booked_count', 'price_adult', 'price_child', 'status',
     ];
 
     protected $casts = [
@@ -22,17 +22,23 @@ class ActivitySlot extends Model
         'end_time'     => 'datetime',
         'capacity'     => 'integer',
         'booked_count' => 'integer',
-        'price'        => 'integer',
+        'price_adult'  => 'integer',
+        'price_child'  => 'integer',
     ];
 
-    public function activity(): BelongsTo
+    public function tenant(): BelongsTo
     {
-        return $this->belongsTo(Activity::class);
+        return $this->belongsTo(Tenant::class);
+    }
+
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
     }
 
     public function schedule(): BelongsTo
     {
-        return $this->belongsTo(ActivitySchedule::class);
+        return $this->belongsTo(ProductSchedule::class);
     }
 
     public function bookings(): HasMany

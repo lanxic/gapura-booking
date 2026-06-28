@@ -14,7 +14,7 @@ class OfferAdminController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $q = Offer::with('activities:id,name,slug')
+        $q = Offer::with('products:id,name,slug')
             ->when($request->search, fn($query, $s) => $query->where('title', 'like', "%$s%"))
             ->when($request->status, function ($query, $s) {
                 $now = now();
@@ -46,24 +46,24 @@ class OfferAdminController extends Controller
             'end_date'       => 'required|date|after_or_equal:start_date',
             'badge'          => 'nullable|string|max:50',
             'is_active'      => 'boolean',
-            'activity_ids'   => 'nullable|array',
-            'activity_ids.*' => 'integer|exists:activities,id',
+            'product_ids'    => 'nullable|array',
+            'product_ids.*'  => 'integer|exists:products,id',
         ]);
 
         $data['slug'] = $data['slug'] ?? Str::slug($data['title']) . '-' . Str::random(4);
 
         $offer = Offer::create($data);
 
-        if (! empty($data['activity_ids'])) {
-            $offer->activities()->sync($data['activity_ids']);
+        if (! empty($data['product_ids'])) {
+            $offer->products()->sync($data['product_ids']);
         }
 
-        return response()->json(['data' => $offer->load('activities:id,name,slug')], 201);
+        return response()->json(['data' => $offer->load('products:id,name,slug')], 201);
     }
 
     public function show(Offer $offer): JsonResponse
     {
-        return response()->json(['data' => $offer->load('activities:id,name,slug', 'promoCodes')]);
+        return response()->json(['data' => $offer->load('products:id,name,slug', 'promoCodes')]);
     }
 
     public function update(Request $request, Offer $offer): JsonResponse
@@ -81,17 +81,17 @@ class OfferAdminController extends Controller
             'end_date'       => 'sometimes|date',
             'badge'          => 'nullable|string|max:50',
             'is_active'      => 'boolean',
-            'activity_ids'   => 'nullable|array',
-            'activity_ids.*' => 'integer|exists:activities,id',
+            'product_ids'    => 'nullable|array',
+            'product_ids.*'  => 'integer|exists:products,id',
         ]);
 
         $offer->update($data);
 
-        if (array_key_exists('activity_ids', $data)) {
-            $offer->activities()->sync($data['activity_ids'] ?? []);
+        if (array_key_exists('product_ids', $data)) {
+            $offer->products()->sync($data['product_ids'] ?? []);
         }
 
-        return response()->json(['data' => $offer->fresh()->load('activities:id,name,slug')]);
+        return response()->json(['data' => $offer->fresh()->load('products:id,name,slug')]);
     }
 
     public function destroy(Offer $offer): JsonResponse

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\UserRole;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -14,7 +15,7 @@ class User extends Authenticatable implements JWTSubject
     use HasFactory, Notifiable, SoftDeletes;
 
     protected $fillable = [
-        'name', 'email', 'phone', 'password', 'role', 'is_active',
+        'tenant_id', 'name', 'email', 'phone', 'password', 'role', 'is_active',
         'email_verified_at', 'email_verification_token',
         'created_by', 'cloudinary_avatar_id', 'cloudinary_avatar_url',
     ];
@@ -31,6 +32,11 @@ class User extends Authenticatable implements JWTSubject
         ];
     }
 
+    public function tenant(): BelongsTo
+    {
+        return $this->belongsTo(Tenant::class);
+    }
+
     public function getJWTIdentifier(): mixed
     {
         return $this->getKey();
@@ -40,6 +46,7 @@ class User extends Authenticatable implements JWTSubject
     {
         return [
             'role'        => $this->role->value,
+            'tenant_id'   => $this->tenant_id,
             'permissions' => $this->getPermissions(),
         ];
     }
@@ -48,12 +55,12 @@ class User extends Authenticatable implements JWTSubject
     {
         return match ($this->role) {
             UserRole::SuperAdmin => [
-                'activities.manage', 'bookings.view', 'bookings.manage',
-                'offers.manage', 'users.manage', 'activity_logs.view',
-                'activity_logs.export', 'settings.manage',
+                'products.manage', 'bookings.view', 'bookings.manage',
+                'offers.manage', 'users.manage', 'tenants.manage',
+                'activity_logs.view', 'activity_logs.export', 'settings.manage',
             ],
-            UserRole::Admin => [
-                'activities.manage', 'bookings.view', 'bookings.manage',
+            UserRole::Admin, UserRole::TenantAdmin => [
+                'products.manage', 'bookings.view', 'bookings.manage',
                 'offers.manage', 'users.manage', 'activity_logs.view',
                 'activity_logs.export',
             ],

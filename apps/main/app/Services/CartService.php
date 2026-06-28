@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\ActivityAddon;
-use App\Models\ActivitySlot;
+use App\Models\ProductAddon;
+use App\Models\ProductSlot;
 use Illuminate\Support\Collection;
 
 class CartService
@@ -50,7 +50,7 @@ class CartService
     private function resolve(array $cartItems): Collection
     {
         return collect($cartItems)->map(function ($item, $index) {
-            $slot = ActivitySlot::with('activity')->find($item['slotId'] ?? $item['slot_id'] ?? null);
+            $slot = ProductSlot::with('product')->find($item['slotId'] ?? $item['slot_id'] ?? null);
             if (!$slot) return null;
 
             $paxAdult = (int) ($item['paxAdult'] ?? $item['pax_adult'] ?? 0);
@@ -61,7 +61,7 @@ class CartService
             $addons = collect(json_decode($addonsJson, true) ?? [])
                 ->filter(fn($a) => !empty($a['addon_id']) && ($a['quantity'] ?? 0) > 0)
                 ->map(function ($a) {
-                    $addon = ActivityAddon::find($a['addon_id']);
+                    $addon = ProductAddon::find($a['addon_id']);
                     if (!$addon) return null;
                     return [
                         'name'     => $addon->name,
@@ -71,6 +71,9 @@ class CartService
                     ];
                 })->filter()->values();
 
+            $priceAdult = $slot->price_adult ?? 0;
+            $priceChild = $slot->price_child ?? $priceAdult;
+
             return [
                 'index'       => $index,
                 'slot'        => $slot,
@@ -78,9 +81,11 @@ class CartService
                 'pax_adult'   => $paxAdult,
                 'pax_child'   => $paxChild,
                 'pax'         => $pax,
+                'price_adult' => $priceAdult,
+                'price_child' => $priceChild,
                 'addons'      => $addons,
                 'addons_json' => $addonsJson,
-                'subtotal'    => ($slot->price * $pax) + $addons->sum('subtotal'),
+                'subtotal'    => ($priceAdult * $paxAdult) + ($priceChild * $paxChild) + $addons->sum('subtotal'),
             ];
         })->filter()->values();
     }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Web\Auth;
 
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
+use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -40,7 +41,8 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('home'));
+        $home = $this->resolveHomeUrl($request) ?? route('login');
+        return redirect()->intended($home);
     }
 
     public function showRegister()
@@ -62,14 +64,15 @@ class AuthController extends Controller
             'email'     => $data['email'],
             'password'  => Hash::make($data['password']),
             'phone'     => $data['phone'] ?? null,
-            'role'      => UserRole::customer,
+            'role'      => UserRole::Customer,
             'is_active' => true,
         ]);
 
         Auth::guard('web')->login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('home')->with('success', 'Selamat datang, ' . $user->name . '!');
+        $home = $this->resolveHomeUrl($request) ?? route('login');
+        return redirect($home)->with('success', 'Selamat datang, ' . $user->name . '!');
     }
 
     public function logout(Request $request)
@@ -78,6 +81,28 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('home');
+        $home = $this->resolveHomeUrl($request);
+        return redirect($home ?? route('login'));
+    }
+
+    private function resolveHomeUrl(Request $request): ?string
+    {
+        // Middleware tenant.identify tidak jalan di auth routes, resolve manual dari host
+        if (app()->bound('current_tenant')) {
+            return route('tenant.home');
+        }
+
+        $host    = $request->getHost();
+        $appHost = parse_url(config('app.url'), PHP_URL_HOST) ?? 'localhost';
+
+        if ($host !== $appHost && str_ends_with($host, '.' . $appHost)) {
+            $slug   = str_replace('.' . $appHost, '', $host);
+            $tenant = Tenant::where('slug', $slug)->where('is_active', true)->first();
+            if ($tenant) {
+                return url("http://{$host}/");
+            }
+        }
+
+        return null;
     }
 }

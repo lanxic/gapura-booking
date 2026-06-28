@@ -9,26 +9,22 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+            TenantSeeder::class,   // harus pertama — UserSeeder dan ProductSeeder butuh tenant_id
             UserSeeder::class,
-            // PRD v4.0 — Activity Booking domain
-            ActivitySeeder::class,
-            ActivitySlotSeeder::class,
-            // Atraksi spesifik
-            NightSafariSeeder::class,
-            // Harus jalan terakhir — referensi bookings yang dibuat seeder di atas
-            ActivityLogSeeder::class,
+            ProductSeeder::class,
         ]);
 
         $this->command->newLine();
-        $this->command->info('✓ Seeding selesai. Akun testing:');
+        $this->command->info('✓ Seeding selesai. Akun testing (password: password):');
         $this->command->table(
-            ['Role', 'Email', 'Password'],
+            ['Role', 'Email', 'Akses'],
             [
-                ['super_admin', 'superadmin@amartha.test', 'password'],
-                ['admin',       'admin@amartha.test',      'password'],
-                ['scanner',     'scanner@amartha.test',    'password'],
-                ['customer',    'customer@amartha.test',   'password'],
-                ['customer',    'customer2@amartha.test',  'password'],
+                ['super_admin',  'superadmin@amartha.test',  'localhost/admin'],
+                ['tenant_admin', 'admin@adventure.test',     'adventure.localhost/admin'],
+                ['tenant_admin', 'admin@wellness.test',      'wellness.localhost/admin'],
+                ['scanner',      'scanner@adventure.test',   'adventure.localhost/admin'],
+                ['customer',     'customer@amartha.test',    'Storefront tenant manapun'],
+                ['customer',     'customer2@amartha.test',   'Storefront tenant manapun'],
             ]
         );
     }

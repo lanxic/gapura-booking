@@ -13,7 +13,7 @@ class Invoice extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'invoice_code', 'customer_id', 'guest_name', 'guest_email', 'guest_phone',
+        'tenant_id', 'invoice_code', 'customer_id', 'guest_name', 'guest_email', 'guest_phone',
         'checkout_slot_id', 'pax_count', 'items', 'subtotal', 'discount_amount',
         'promo_code_id', 'total_amount', 'payment_plan', 'due_now', 'due_later',
         'status', 'pdf_path', 'due_at', 'paid_at', 'gateway', 'gateway_order_id',
@@ -31,6 +31,11 @@ class Invoice extends Model
         'paid_at'         => 'datetime',
     ];
 
+    public function tenant(): BelongsTo
+    {
+        return $this->belongsTo(Tenant::class);
+    }
+
     public function customer(): BelongsTo
     {
         return $this->belongsTo(Customer::class);
@@ -38,7 +43,7 @@ class Invoice extends Model
 
     public function slot(): BelongsTo
     {
-        return $this->belongsTo(ActivitySlot::class, 'checkout_slot_id');
+        return $this->belongsTo(ProductSlot::class, 'checkout_slot_id');
     }
 
     public function promoCode(): BelongsTo

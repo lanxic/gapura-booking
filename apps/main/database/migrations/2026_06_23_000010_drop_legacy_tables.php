@@ -24,13 +24,12 @@ return new class extends Migration
         Schema::dropIfExists('orders');
         Schema::dropIfExists('vouchers');
 
-        // Product-domain tables
+        // Product-domain legacy tables (products table sudah di-recreate oleh 2026_06_23_000001)
         Schema::dropIfExists('product_addon');
         Schema::dropIfExists('addons');
         Schema::dropIfExists('pricing_rules');
         Schema::dropIfExists('availability_slots');
         Schema::dropIfExists('product_variants');
-        Schema::dropIfExists('products');
 
         // Audit / operational tables (replaced by new domain)
         Schema::dropIfExists('correction_requests');

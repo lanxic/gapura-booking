@@ -12,7 +12,7 @@ class InvoiceController extends Controller
 {
     public function __construct(private readonly InvoiceService $invoiceService) {}
 
-    public function show(string $code)
+    public function show(string $tenantSlug, string $code)
     {
         $user    = Auth::guard('web')->user();
         $invoice = Invoice::where('invoice_code', $code)
@@ -23,7 +23,7 @@ class InvoiceController extends Controller
         return view('invoice.show', compact('invoice'));
     }
 
-    public function retry(Request $request, string $code)
+    public function retry(string $tenantSlug, Request $request, string $code)
     {
         $user    = Auth::guard('web')->user();
         $invoice = Invoice::where('invoice_code', $code)
@@ -44,9 +44,9 @@ class InvoiceController extends Controller
         $code = $request->get('order_id');
 
         if (!$code) {
-            return redirect()->route('home');
+            return redirect()->route('tenant.home');
         }
 
-        return redirect()->route('invoice.show', $code);
+        return redirect()->route('tenant.invoice.show', $code);
     }
 }

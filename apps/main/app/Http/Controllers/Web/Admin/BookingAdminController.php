@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Web\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\ActivitySlot;
+use App\Models\ProductSlot;
 use App\Models\Booking;
 use App\Models\User;
 use App\Services\BookingService;
@@ -15,7 +15,7 @@ class BookingAdminController extends Controller
 
     public function index(Request $request)
     {
-        $bookings = Booking::with(['slot.activity', 'customer'])
+        $bookings = Booking::with(['slot.product', 'customer'])
             ->when($request->search, fn($q) =>
                 $q->where('booking_code', 'like', "%{$request->search}%")
                   ->orWhere('guest_name', 'like', "%{$request->search}%"))
@@ -24,9 +24,9 @@ class BookingAdminController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        $slots = ActivitySlot::with('activity')
+        $slots = ProductSlot::with('product')
             ->where('date', '>=', now()->toDateString())
-            ->where('is_active', true)
+            ->available()
             ->orderBy('date')
             ->get();
 
@@ -35,7 +35,7 @@ class BookingAdminController extends Controller
 
     public function show(int $id)
     {
-        $booking = Booking::with(['slot.activity', 'customer'])->findOrFail($id);
+        $booking = Booking::with(['slot.product', 'customer'])->findOrFail($id);
         return view('admin.bookings.show', compact('booking'));
     }
 
@@ -52,7 +52,7 @@ class BookingAdminController extends Controller
     public function storeManual(Request $request)
     {
         $data = $request->validate([
-            'slot_id'        => ['required', 'exists:activity_slots,id'],
+            'slot_id'        => ['required', 'exists:product_slots,id'],
             'guest_name'     => ['required', 'string'],
             'guest_email'    => ['required', 'email'],
             'guest_phone'    => ['nullable', 'string'],
@@ -72,18 +72,18 @@ class BookingAdminController extends Controller
 
     public function export(Request $request)
     {
-        $bookings = Booking::with(['slot.activity'])
+        $bookings = Booking::with(['slot.product'])
             ->when($request->status, fn($q) => $q->where('status', $request->status))
             ->latest()
             ->get();
 
-        $csv = "Booking Code,Name,Email,Activity,Date,Pax,Status\n";
+        $csv = "Booking Code,Name,Email,Product,Date,Pax,Status\n";
         foreach ($bookings as $b) {
             $csv .= implode(',', [
                 $b->booking_code,
                 $b->guest_name,
                 $b->guest_email,
-                $b->slot?->activity?->name,
+                $b->slot?->product?->name,
                 $b->slot?->date?->format('Y-m-d'),
                 $b->pax_count,
                 $b->status,

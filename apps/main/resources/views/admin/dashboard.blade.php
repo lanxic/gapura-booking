@@ -37,8 +37,8 @@
         <div class="stat-card card p-3 d-flex flex-row align-items-center gap-3">
             <div class="stat-icon bg-warning-subtle text-warning">📅</div>
             <div>
-                <div class="text-muted small">Aktivitas Aktif</div>
-                <div class="fw-bold fs-4">{{ number_format($stats['total_activities']) }}</div>
+                <div class="text-muted small">Produk Aktif</div>
+                <div class="fw-bold fs-4">{{ number_format($stats['total_products']) }}</div>
             </div>
         </div>
     </div>

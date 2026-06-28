@@ -58,7 +58,8 @@
     {{-- ─── LIST / GRID VIEWS ───────────────────────────────────────────────── --}}
 
         {{-- List cards --}}
-        <div class="d-flex flex-column gap-3" x-show="view === 'list'">
+        <div x-show="view === 'list'" x-cloak>
+        <div class="d-flex flex-column gap-3">
             @forelse($activities as $activity)
             <div class="activity-list-card">
 
@@ -133,6 +134,7 @@
                     Tidak ada aktivitas yang ditemukan.
                 </div>
             @endforelse
+        </div>
         </div>
 
         {{-- Grid cards (toggle) --}}

@@ -93,9 +93,59 @@ class SettingsController extends Controller
     public function updateGateway(Request $request, string $name)
     {
         $gateway = PaymentGateway::where('name', $name)->firstOrFail();
-        $gateway->update($request->validate([
-            'config' => ['nullable', 'array'],
-        ]));
+
+        $dualEnvGateways = ['midtrans', 'doku'];
+
+        if (in_array($name, $dualEnvGateways)) {
+            $data = $request->validate([
+                'environment'            => ['required', 'in:sandbox,production'],
+                'sandbox.merchant_id'    => ['nullable', 'string'],
+                'sandbox.server_key'     => ['nullable', 'string'],
+                'sandbox.client_key'     => ['nullable', 'string'],
+                'production.merchant_id' => ['nullable', 'string'],
+                'production.server_key'  => ['nullable', 'string'],
+                'production.client_key'  => ['nullable', 'string'],
+            ]);
+
+            $env    = $data['environment'];
+            $config = $gateway->getRawOriginal('config')
+                ? json_decode($gateway->getRawOriginal('config'), true)
+                : [];
+
+            // Merge each environment's credentials, keeping existing values if not re-entered
+            foreach (['sandbox', 'production'] as $e) {
+                foreach (['merchant_id', 'server_key', 'client_key'] as $field) {
+                    if (!empty($data[$e][$field])) {
+                        $config[$e][$field] = $data[$e][$field];
+                    }
+                }
+            }
+
+            // Auto-set gateway base URL in config
+            $config['base_url'] = match ($name) {
+                'midtrans' => $env === 'production'
+                    ? 'https://app.midtrans.com/snap/snap.js'
+                    : 'https://app.sandbox.midtrans.com/snap/snap.js',
+                'doku' => $env === 'production'
+                    ? 'https://api.doku.com'
+                    : 'https://api-sandbox.doku.com',
+                default => null,
+            };
+
+            // Sync active environment's credentials to dedicated encrypted columns
+            $active   = $config[$env] ?? [];
+            $toUpdate = ['environment' => $env, 'config' => $config];
+            if (!empty($active['server_key']))  $toUpdate['server_key']  = $active['server_key'];
+            if (!empty($active['client_key']))  $toUpdate['client_key']  = $active['client_key'];
+            if (!empty($active['merchant_id'])) $toUpdate['merchant_id'] = $active['merchant_id'];
+
+            $gateway->update($toUpdate);
+        } else {
+            $gateway->update($request->validate([
+                'config' => ['nullable', 'array'],
+                'notes'  => ['nullable', 'string'],
+            ]));
+        }
 
         return back()->with('success', 'Gateway ' . $name . ' diupdate.');
     }

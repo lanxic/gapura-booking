@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Dashboard') — Admin Amartha eTicket</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     @vite(['resources/scss/admin.scss', 'resources/js/admin.js'])
     @stack('head')
 </head>
@@ -20,59 +21,80 @@
 
         <nav class="flex-grow-1 py-2">
             <div class="nav-section-label"><span>Utama</span></div>
-            <a href="{{ route('admin.dashboard') }}"
+            <a href="{{ route('admin.dashboard') }}" title="Dashboard"
                class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
                 <i class="bi bi-speedometer2"></i><span>Dashboard</span>
             </a>
 
-            <div class="nav-section-label"><span>Konten</span></div>
-            <a href="{{ route('admin.activities.index') }}"
-               class="nav-link {{ request()->routeIs('admin.activities.*') ? 'active' : '' }}">
-                <i class="bi bi-calendar-event"></i><span>Aktivitas</span>
+            <div class="nav-section-label"><span>Multi-Tenant</span></div>
+            <a href="{{ route('admin.tenants.index') }}" title="Tenant"
+               class="nav-link {{ request()->routeIs('admin.tenants.*') ? 'active' : '' }}">
+                <i class="bi bi-buildings"></i><span>Tenant</span>
             </a>
-            <a href="{{ route('admin.offers.index') }}"
+
+            <div class="nav-section-label"><span>Konten</span></div>
+            <a href="{{ route('admin.products.index') }}" title="Produk"
+               class="nav-link {{ request()->routeIs('admin.products.*') ? 'active' : '' }}">
+                <i class="bi bi-box-seam"></i><span>Produk</span>
+            </a>
+            <a href="{{ route('admin.offers.index') }}" title="Penawaran"
                class="nav-link {{ request()->routeIs('admin.offers.*') ? 'active' : '' }}">
                 <i class="bi bi-tag"></i><span>Penawaran</span>
             </a>
 
             <div class="nav-section-label"><span>Transaksi</span></div>
-            <a href="{{ route('admin.bookings.index') }}"
+            <a href="{{ route('admin.bookings.index') }}" title="Booking"
                class="nav-link {{ request()->routeIs('admin.bookings.*') ? 'active' : '' }}">
                 <i class="bi bi-ticket-perforated"></i><span>Booking</span>
             </a>
-            <a href="{{ route('admin.invoices.index') }}"
+            <a href="{{ route('admin.invoices.index') }}" title="Invoice"
                class="nav-link {{ request()->routeIs('admin.invoices.*') ? 'active' : '' }}">
                 <i class="bi bi-receipt"></i><span>Invoice</span>
             </a>
 
             <div class="nav-section-label"><span>Pengguna</span></div>
-            <a href="{{ route('admin.customers.index') }}"
+            <a href="{{ route('admin.customers.index') }}" title="Pelanggan"
                class="nav-link {{ request()->routeIs('admin.customers.*') ? 'active' : '' }}">
                 <i class="bi bi-people"></i><span>Pelanggan</span>
             </a>
-            <a href="{{ route('admin.users.index') }}"
+            <a href="{{ route('admin.users.index') }}" title="Manajemen User"
                class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">
                 <i class="bi bi-person-gear"></i><span>Manajemen User</span>
             </a>
 
             <div class="nav-section-label"><span>Sistem</span></div>
-            <a href="{{ route('admin.settings.general') }}"
+            <a href="{{ route('admin.settings.general') }}" title="Pengaturan"
                class="nav-link {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}">
                 <i class="bi bi-gear"></i><span>Pengaturan</span>
             </a>
         </nav>
 
-        <div class="p-3 border-top border-secondary">
-            <div class="d-flex align-items-center gap-2 mb-2">
-                <i class="bi bi-person-circle text-muted"></i>
-                <span class="small">{{ Auth::guard('admin_session')->user()?->name }}</span>
+        @php $adminUser = Auth::guard('admin_session')->user(); @endphp
+        <div class="sidebar-footer" x-data="{ profileOpen: false }" @click.outside="profileOpen = false">
+            <button type="button"
+                    class="sidebar-profile-btn"
+                    @click="profileOpen = !profileOpen"
+                    :class="{ 'active': profileOpen }">
+                <div class="avatar-sm flex-shrink-0">{{ strtoupper(substr($adminUser?->name ?? 'A', 0, 2)) }}</div>
+                <div class="profile-info">
+                    <span class="profile-name">{{ $adminUser?->name }}</span>
+                    <span class="profile-role">{{ $adminUser?->role?->label() ?? $adminUser?->role }}</span>
+                </div>
+                <i class="bi bi-chevron-up profile-chevron" :class="{ 'rotated': !profileOpen }"></i>
+            </button>
+
+            <div class="profile-dropdown" x-show="profileOpen" x-cloak>
+                <a href="{{ route('admin.profile.show') }}" class="profile-dropdown-item">
+                    <i class="bi bi-person-circle"></i> Profil Saya
+                </a>
+                <div class="profile-dropdown-divider"></div>
+                <form method="POST" action="{{ route('admin.logout') }}">
+                    @csrf
+                    <button type="submit" class="profile-dropdown-item text-danger w-100">
+                        <i class="bi bi-box-arrow-left"></i> Logout
+                    </button>
+                </form>
             </div>
-            <form method="POST" action="{{ route('admin.logout') }}">
-                @csrf
-                <button class="btn btn-sm btn-outline-danger w-100">
-                    <i class="bi bi-box-arrow-left me-1"></i><span>Logout</span>
-                </button>
-            </form>
         </div>
     </aside>
 
