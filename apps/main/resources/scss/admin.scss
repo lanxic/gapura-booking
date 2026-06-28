@@ -1,0 +1,285 @@
+// Bootstrap
+@import 'bootstrap/scss/bootstrap';
+
+// Alpine cloak
+[x-cloak] { display: none !important; }
+
+// Admin layout
+$sidebar-header-h: 64px;
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f1f5f9;
+}
+
+// ── Sidebar ────────────────────────────────────────────────────────────────────
+.sidebar {
+    width: 260px;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    background: #1e293b;
+    color: #cbd5e1;
+    transition: width .25s ease;
+    flex-shrink: 0;
+    overflow: hidden;
+    overflow-y: auto;
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
+
+    .sidebar-brand {
+        height: $sidebar-header-h;
+        color: #fff;
+        font-weight: 700;
+        font-size: 1.1rem;
+        padding: 0 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: .6rem;
+        border-bottom: 1px solid #334155;
+        white-space: nowrap;
+        overflow: hidden;
+    }
+
+    .nav-link {
+        color: #94a3b8;
+        padding: .65rem 1.5rem;
+        border-radius: 8px;
+        margin: 2px 8px;
+        display: flex;
+        align-items: center;
+        gap: .6rem;
+        font-size: .9rem;
+        white-space: nowrap;
+        overflow: hidden;
+        transition: background .15s, color .15s;
+
+        i { flex-shrink: 0; font-size: 1rem; }
+        span { transition: opacity .2s; }
+
+        &:hover { color: #fff; background: #334155; }
+        &.active { color: #fff; background: #3b82f6; }
+    }
+
+    .nav-section-label {
+        font-size: .7rem;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: #475569;
+        padding: 1rem 1.5rem .25rem;
+        white-space: nowrap;
+        overflow: hidden;
+        transition: opacity .2s;
+    }
+
+    .sidebar-footer {
+        padding: .5rem .75rem .75rem;
+        border-top: 1px solid #334155;
+        white-space: nowrap;
+        overflow: hidden;
+        position: relative;
+    }
+}
+
+// ── Avatar ─────────────────────────────────────────────────────────────────────
+@mixin avatar($size, $font-size) {
+    width: $size;
+    height: $size;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6, #6366f1);
+    color: #fff;
+    font-weight: 700;
+    font-size: $font-size;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    letter-spacing: -.02em;
+}
+
+.avatar-sm { @include avatar(36px, .8rem); }
+.avatar-lg { @include avatar(72px, 1.5rem); }
+
+// ── Sidebar profile button + dropdown ─────────────────────────────────────────
+.sidebar-profile-btn {
+    width: 100%;
+    background: none;
+    border: none;
+    border-radius: 8px;
+    padding: .5rem .6rem;
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    cursor: pointer;
+    color: #cbd5e1;
+    transition: background .15s;
+    text-align: left;
+
+    &:hover, &.active { background: #334155; }
+
+    .profile-info {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    .profile-name {
+        font-size: .85rem;
+        font-weight: 600;
+        color: #f1f5f9;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .profile-role {
+        font-size: .7rem;
+        color: #64748b;
+        white-space: nowrap;
+    }
+    .profile-chevron {
+        font-size: .75rem;
+        color: #475569;
+        transition: transform .2s;
+        flex-shrink: 0;
+        &.rotated { transform: rotate(180deg); }
+    }
+}
+
+.profile-dropdown {
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: .4rem;
+}
+
+.profile-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    width: 100%;
+    padding: .55rem .9rem;
+    font-size: .85rem;
+    color: #cbd5e1;
+    text-decoration: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: background .15s;
+    text-align: left;
+
+    &:hover { background: #1e293b; color: #fff; }
+    &.text-danger { color: #f87171 !important; &:hover { background: rgba(239,68,68,.1); } }
+}
+
+.profile-dropdown-divider {
+    border-top: 1px solid #1e293b;
+    margin: 0;
+}
+
+// ── Collapsed state ────────────────────────────────────────────────────────────
+.sidebar-collapsed .sidebar {
+    width: 64px;
+
+    .sidebar-brand {
+        padding: 0;
+        justify-content: center;
+        gap: 0;
+        span { display: none; }
+    }
+
+    .nav-link {
+        padding: .65rem 0;
+        margin: 2px 8px;
+        justify-content: center;
+        gap: 0;
+        span { display: none; }
+    }
+
+    .nav-section-label { opacity: 0; height: 0; padding: 0; overflow: hidden; }
+
+    .sidebar-footer {
+        padding: .5rem .25rem .75rem;
+        .sidebar-profile-btn {
+            justify-content: center;
+            padding: .5rem;
+            .profile-info, .profile-chevron { display: none; }
+        }
+        .profile-dropdown { display: none !important; }
+    }
+}
+
+// ── Main content ───────────────────────────────────────────────────────────────
+.main-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.topbar {
+    height: $sidebar-header-h;
+    background: #fff;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.page-header {
+    padding: 1.5rem 1.5rem .5rem;
+}
+
+.content-area {
+    padding: 1rem 1.5rem 2rem;
+    flex: 1;
+}
+
+// Stats cards
+.stat-card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    background: #fff;
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+    }
+}
+
+// Tables
+.table-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    overflow: hidden;
+}
+
+.badge-status {
+    font-size: .75rem;
+    padding: .3rem .7rem;
+    border-radius: 20px;
+}
+
+// Modal
+.modal-lg { max-width: 700px; }
+
+.card-header {
+    background: #fff;
+    border-bottom: 1px solid #eef0f2;
+}
+
+.border-dashed {
+    border: 1.5px dashed #dee2e6 !important;
+}

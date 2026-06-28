@@ -1,0 +1,413 @@
+// Override Bootstrap primary before import
+$primary: #1A4D2E;
+$link-color: #1A4D2E;
+
+// Bootstrap
+@import 'bootstrap/scss/bootstrap';
+
+// ─── CSS vars ─────────────────────────────────────────────────────────────────
+:root {
+    --safari-green:      #1A4D2E;
+    --safari-green-dark: #113322;
+    --safari-green-light:#e8f5e9;
+}
+
+// ─── Alpine cloak ─────────────────────────────────────────────────────────────
+[x-cloak] { display: none !important; }
+
+// ─── Base ─────────────────────────────────────────────────────────────────────
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f8f9fa;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1 0 auto;
+}
+
+// ─── Navbar ───────────────────────────────────────────────────────────────────
+.navbar-brand {
+    font-weight: 700;
+    font-size: 1.25rem;
+}
+
+.nav-link.active {
+    color: var(--safari-green) !important;
+    font-weight: 600;
+}
+
+// ─── Cards ────────────────────────────────────────────────────────────────────
+.card {
+    border: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    border-radius: 12px;
+}
+
+// ─── Slot picker ──────────────────────────────────────────────────────────────
+.slot-btn {
+    cursor: pointer;
+    transition: all .2s;
+    &:hover { background-color: var(--safari-green-light); }
+    &.selected { background-color: var(--safari-green); color: #fff; border-color: var(--safari-green); }
+    &.disabled-slot { opacity: .5; cursor: not-allowed; pointer-events: none; }
+}
+
+// ─── Grid activity card ───────────────────────────────────────────────────────
+.activity-card img {
+    height: 200px;
+    object-fit: cover;
+    border-radius: 12px 12px 0 0;
+}
+
+// ─── Hero banner ──────────────────────────────────────────────────────────────
+.hero-banner {
+    width: 100%;
+    min-height: 360px;
+    background: linear-gradient(135deg, var(--safari-green-dark) 0%, var(--safari-green) 100%);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    position: relative;
+    overflow: hidden;
+
+    &__overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0,0,0,.25);
+    }
+}
+
+// ─── Section title with decorative underline ──────────────────────────────────
+.section-title {
+    text-align: center;
+    padding: 2.5rem 0 1.5rem;
+
+    h1 { color: var(--safari-green); font-weight: 700; margin-bottom: .25rem; }
+    h2 { color: var(--safari-green); font-weight: 700; margin-bottom: .5rem; }
+
+    .title-divider {
+        width: 56px;
+        height: 4px;
+        background-color: var(--safari-green);
+        margin: .5rem auto 0;
+        border-radius: 2px;
+    }
+}
+
+// ─── Horizontal activity list card ───────────────────────────────────────────
+.activity-list-card {
+    display: flex;
+    align-items: stretch;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
+
+    // Left: image(s)
+    .alc-images {
+        flex: 0 0 280px;
+        display: flex;
+
+        img {
+            width: 100%;
+            height: 100%;
+            min-height: 200px;
+            object-fit: cover;
+        }
+
+        &.has-two img {
+            width: 50%;
+        }
+
+        @media (max-width: 767.98px) {
+            flex: 0 0 100%;
+            max-height: 200px;
+        }
+    }
+
+    // Right: body
+    .alc-body {
+        flex: 1;
+        padding: 1.25rem 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: .35rem;
+    }
+
+    // Footer row inside body
+    .alc-footer {
+        margin-top: auto;
+        padding-top: .75rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    @media (max-width: 767.98px) {
+        flex-direction: column;
+    }
+}
+
+// ─── Konfirmasi Instan badge ──────────────────────────────────────────────────
+.badge-instant {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: #f39c12;
+    font-size: .8rem;
+    font-weight: 600;
+}
+
+// ─── Primary subtle badge (override) ─────────────────────────────────────────
+.badge.bg-primary-subtle {
+    background-color: var(--safari-green-light) !important;
+    color: var(--safari-green) !important;
+}
+
+// ─── Footer ───────────────────────────────────────────────────────────────────
+.site-footer {
+    background-color: var(--safari-green);
+    color: #fff;
+
+    a {
+        color: #fff;
+        text-decoration: none;
+        opacity: .85;
+        transition: opacity .2s;
+        &:hover { opacity: 1; }
+    }
+
+    .footer-social {
+        font-size: 1.4rem;
+        gap: 1.2rem;
+        display: flex;
+        justify-content: center;
+    }
+
+    .footer-contact-icon {
+        font-size: 2rem;
+        opacity: .9;
+        display: block;
+        margin-bottom: .5rem;
+    }
+
+    .footer-contact-label {
+        font-size: .78rem;
+        opacity: .7;
+        margin-bottom: .15rem;
+    }
+
+    .footer-contact-value {
+        font-size: .9rem;
+        font-weight: 500;
+    }
+
+    .footer-divider {
+        border-color: rgba(255,255,255,.2);
+    }
+
+    .footer-copy {
+        font-size: .8rem;
+        opacity: .7;
+    }
+}
+
+// ─── Detail page — Image Gallery ──────────────────────────────────────────────
+.gallery-main {
+    background: #111;
+    img { transition: opacity .2s; }
+}
+
+.gallery-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255,255,255,.85);
+    border: none;
+    border-radius: 50%;
+    width: 42px;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    cursor: pointer;
+    z-index: 10;
+    transition: background .15s;
+
+    &:hover { background: #fff; }
+    &:focus { outline: none; }
+}
+.gallery-btn-prev { left: 14px; }
+.gallery-btn-next { right: 14px; }
+
+.gallery-thumb {
+    opacity: .6;
+    border: 2px solid transparent;
+    transition: opacity .2s, border-color .2s;
+    flex-shrink: 0;
+
+    &.active, &:hover { opacity: 1; border-color: var(--safari-green); }
+}
+
+// ─── Detail page — Activity tabs ──────────────────────────────────────────────
+.activity-tabs {
+    gap: .25rem;
+    border-bottom: 2px solid #dee2e6 !important;
+
+    .nav-link {
+        color: #495057;
+        border: none;
+        border-bottom: 3px solid transparent;
+        border-radius: 0;
+        padding: .55rem 1rem;
+        font-weight: 500;
+        font-size: .9rem;
+        margin-bottom: -2px;
+
+        &.active {
+            color: var(--safari-green);
+            border-bottom-color: var(--safari-green);
+            background: transparent;
+        }
+
+        &:hover:not(.active) {
+            color: var(--safari-green);
+            background: rgba(26,77,46,.05);
+        }
+    }
+}
+
+// ─── Detail page — Ticket card ────────────────────────────────────────────────
+.ticket-card {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    border: 1px solid #dee2e6;
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    background: #fff;
+    transition: border-color .15s;
+
+    &.selected { border-color: var(--safari-green); box-shadow: 0 0 0 1px var(--safari-green); }
+
+    .ticket-info { flex: 1; min-width: 0; }
+    .ticket-name { font-weight: 600; margin-bottom: .15rem; }
+    .ticket-price { color: var(--safari-green); font-weight: 600; font-size: .9rem; }
+}
+
+// ─── Detail page — Date tab buttons ───────────────────────────────────────────
+.date-tab-btn {
+    border: 1px solid #dee2e6;
+    background: #fff;
+    border-radius: 6px;
+    padding: .4rem .9rem;
+    font-size: .875rem;
+    cursor: pointer;
+    transition: all .15s;
+    line-height: 1.5;
+
+    &.active {
+        background: var(--safari-green);
+        color: #fff;
+        border-color: var(--safari-green);
+    }
+
+    &:hover:not(.active) {
+        border-color: var(--safari-green);
+        color: var(--safari-green);
+    }
+}
+
+// ─── Invoice / QR ─────────────────────────────────────────────────────────────
+.invoice-status-badge {
+    font-size: 1rem;
+    padding: .5rem 1.2rem;
+    border-radius: 20px;
+}
+
+.qr-container {
+    max-width: 250px;
+    margin: 0 auto;
+}
+
+// ─── Detail & Termasuk Panel (ticket expanded view) ───────────────────────────
+.detail-panel-compat {
+    // legacy class kept for reference, actual styles injected via @push('head')
+}
+.detail-panel {
+    .detail-panel-title {
+        font-weight: 700;
+        font-size: .92rem;
+        color: #212529;
+        padding-bottom: .6rem;
+        margin-bottom: .85rem;
+        border-bottom: 2px solid var(--safari-green);
+    }
+
+    .detail-section {
+        margin-bottom: .9rem;
+
+        &:last-of-type { margin-bottom: 0; }
+    }
+
+    .detail-label {
+        font-size: .72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        color: var(--safari-green);
+        margin-bottom: .3rem;
+
+        &--danger { color: #dc3545; }
+    }
+
+    .detail-body {
+        font-size: .82rem;
+        line-height: 1.6;
+        color: #495057;
+    }
+
+    .detail-list {
+        margin: 0;
+        padding-left: 1.1rem;
+        font-size: .82rem;
+        line-height: 1.6;
+        color: #495057;
+
+        li + li { margin-top: .2rem; }
+    }
+
+    .detail-expand-btn {
+        display: inline-block;
+        margin-top: .6rem;
+        font-size: .78rem;
+        font-weight: 600;
+        color: var(--safari-green);
+        background: none;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        text-decoration: underline;
+        text-decoration-style: dotted;
+        text-underline-offset: 2px;
+
+        &:hover { color: var(--safari-green-dark); }
+    }
+}
+
+// ─── Custom Calendar ───────────────────────────────────────────────────────────
+.btn-link.cal-day {
+    color: #212529;
+    text-decoration: none;
+
+    &:hover {
+        background: var(--safari-green-light);
+        color: var(--safari-green);
+    }
+}
