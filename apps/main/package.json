@@ -1,0 +1,21 @@
+{
+    "$schema": "https://www.schemastore.org/package.json",
+    "name": "main",
+    "private": true,
+    "scripts": {
+        "dev": "concurrently \"php -c php.ini artisan serve\" \"vite\"",
+        "build": "vite build",
+        "serve": "php -c php.ini artisan serve"
+    },
+    "devDependencies": {
+        "@vitejs/plugin-vue": "^5.0.0",
+        "alpinejs": "^3.14.9",
+        "autoprefixer": "^10.4.20",
+        "bootstrap": "^5.3.3",
+        "concurrently": "^9.1.2",
+        "laravel-vite-plugin": "^1.2.0",
+        "postcss": "^8.5.1",
+        "sass": "^1.83.4",
+        "vite": "^6.0.11"
+    }
+}

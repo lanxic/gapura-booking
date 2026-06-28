@@ -5,14 +5,17 @@
     "dev": "turbo dev",
     "dev:web": "turbo dev --filter=web",
     "dev:admin": "turbo dev --filter=admin",
+    "dev:scanner": "turbo dev --filter=scanner",
     "build": "turbo build",
     "build:web": "turbo build --filter=web",
     "build:admin": "turbo build --filter=admin",
+    "build:scanner": "turbo build --filter=scanner",
     "lint": "turbo lint",
     "type-check": "turbo type-check",
     "clean": "turbo clean && rm -rf node_modules"
   },
   "devDependencies": {
+    "concurrently": "^9.1.2",
     "turbo": "latest",
     "typescript": "^5"
   },
