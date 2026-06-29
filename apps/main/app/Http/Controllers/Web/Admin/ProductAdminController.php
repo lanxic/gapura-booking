@@ -130,7 +130,7 @@ class ProductAdminController extends Controller
             'description'      => ['nullable', 'string'],
             'type'             => ['nullable', 'in:aktivitas'],
             'category'         => ['required', 'in:indoor,outdoor'],
-            'base_price'       => ['required', 'numeric', 'min:0'],
+            'price_adult'       => ['required', 'numeric', 'min:0'],
             'max_pax'          => ['required', 'integer', 'min:1'],
             'min_pax'          => ['nullable', 'integer', 'min:1'],
             'duration_minutes' => ['nullable', 'integer', 'min:1'],

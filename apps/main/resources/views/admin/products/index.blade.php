@@ -38,7 +38,7 @@
                     <span class="badge bg-secondary-subtle text-secondary">{{ $product->tenant?->name ?? '-' }}</span>
                 </td>
                 <td><span class="badge bg-info-subtle text-info">{{ $product->type }}</span></td>
-                <td>Rp {{ number_format($product->base_price, 0, ',', '.') }}</td>
+                <td>Rp {{ number_format($product->price_adult, 0, ',', '.') }}</td>
                 <td>{{ $product->max_pax }}</td>
                 <td>
                     <span class="badge {{ $product->is_active ? 'bg-success' : 'bg-secondary' }}">

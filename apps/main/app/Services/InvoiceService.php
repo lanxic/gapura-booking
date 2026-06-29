@@ -17,31 +17,34 @@ class InvoiceService
 
     /**
      * Buat invoice baru saat checkout submit (PRD Section 13.3 Step 1).
-     * Slot di-lock di Redis TTL 2 jam.
+     * Cek kapasitas hanya berdasarkan booked_count (transaksi yang sudah paid).
+     * Order bersamaan di sisa terakhir bisa keduanya lolos — overbooking tipis diterima.
+     * Slot ditutup otomatis setelah semua payment confirm via BookingService::syncStatus().
      */
     public function createFromCheckout(array $data): Invoice
     {
-        $slot = ProductSlot::lockForUpdate()->findOrFail($data['slot_id']);
+        $slot = ProductSlot::findOrFail($data['slot_id']);
 
         if (! $slot->isAvailableFor($data['pax_count'])) {
-            throw new \DomainException('Slot tidak tersedia untuk jumlah pax yang dipilih.');
+            throw new \DomainException('Slot tidak tersedia atau sudah penuh.');
         }
 
         $lockTtlMinutes = (int) (\App\Models\SystemSetting::get('booking', 'slot_lock_ttl_minutes', 120));
 
-        $invoiceCode = $this->generateInvoiceCode();
-        $items = $this->buildItems($slot, $data);
+        $items    = $this->buildItems($slot, $data);
         $subtotal = collect($items)->sum('subtotal');
-        $discount = 0;
+        $discount    = 0;
         $promoCodeId = null;
 
         if (! empty($data['promo_code'])) {
             [$discount, $promoCodeId] = $this->applyPromo($data['promo_code'], $subtotal);
         }
 
-        $total = max(0, $subtotal - $discount);
-        $plan = $this->resolvePlan($data['payment_plan'] ?? 'FULL', $total, $slot->date);
+        $total  = max(0, $subtotal - $discount);
+        $plan   = $this->resolvePlan($data['payment_plan'] ?? 'FULL', $total, $slot->date);
         $dueNow = (int) round($total * $plan->percentage / 100);
+
+        $invoiceCode = $this->generateInvoiceCode();
 
         return DB::transaction(function () use (
             $slot, $data, $invoiceCode, $items, $subtotal, $discount,
@@ -67,7 +70,6 @@ class InvoiceService
                 'due_at'          => now()->addMinutes($lockTtlMinutes),
             ]);
 
-            // Lock slot di Redis (key = slot:{id}, value = invoice_code)
             Redis::setex("slot_lock:{$slot->id}", $lockTtlMinutes * 60, $invoiceCode);
 
             if ($promoCodeId) {

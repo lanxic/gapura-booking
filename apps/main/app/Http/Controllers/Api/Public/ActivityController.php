@@ -22,18 +22,18 @@ class ActivityController extends Controller
             $query->where('level', $request->level);
         }
         if ($request->filled('min_price')) {
-            $query->where('base_price', '>=', $request->integer('min_price'));
+            $query->where('price_adult', '>=', $request->integer('min_price'));
         }
         if ($request->filled('max_price')) {
-            $query->where('base_price', '<=', $request->integer('max_price'));
+            $query->where('price_adult', '<=', $request->integer('max_price'));
         }
         if ($request->filled('search')) {
             $query->where('name', 'like', '%' . $request->search . '%');
         }
 
         $sortMap = [
-            'price_asc'  => ['base_price', 'asc'],
-            'price_desc' => ['base_price', 'desc'],
+            'price_asc'  => ['price_adult', 'asc'],
+            'price_desc' => ['price_adult', 'desc'],
             'newest'     => ['created_at', 'desc'],
         ];
         [$col, $dir] = $sortMap[$request->query('sort', 'newest')] ?? ['created_at', 'desc'];
@@ -45,7 +45,7 @@ class ActivityController extends Controller
             'slug'             => $p->slug,
             'category'         => $p->category,
             'duration_minutes' => $p->duration_minutes,
-            'base_price'       => $p->base_price,
+            'price_adult'       => $p->price_adult,
             'level'            => $p->level,
             'min_pax'          => $p->min_pax,
             'max_pax'          => $p->max_pax,
@@ -73,7 +73,7 @@ class ActivityController extends Controller
             'max_pax'          => $product->max_pax,
             'level'            => $product->level,
             'min_age'          => $product->min_age,
-            'base_price'       => $product->base_price,
+            'price_adult'       => $product->price_adult,
             'meta'             => $product->meta,
             'media'            => $product->media->map(fn ($m) => ['url' => $m->url, 'is_primary' => $m->is_primary]),
             'addons'           => $product->addons->map(fn ($a) => [

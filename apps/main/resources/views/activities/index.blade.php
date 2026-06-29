@@ -118,7 +118,7 @@
                     {{-- Footer: price + CTA --}}
                     <div class="alc-footer">
                         <span class="fw-bold text-primary fs-5">
-                            Rp {{ number_format($activity->base_price, 0, ',', '.') }}
+                            Rp {{ number_format($activity->price_adult, 0, ',', '.') }}
                         </span>
                         <a href="{{ route('activities.show', $activity->slug) }}"
                            class="btn btn-primary btn-sm px-4">
@@ -157,7 +157,7 @@
                         <p class="card-text text-muted small">{{ $activity->short_description }}</p>
                     </div>
                     <div class="card-footer bg-transparent border-0 d-flex justify-content-between align-items-center pb-3 px-3">
-                        <span class="fw-bold text-primary">Rp {{ number_format($activity->base_price, 0, ',', '.') }}</span>
+                        <span class="fw-bold text-primary">Rp {{ number_format($activity->price_adult, 0, ',', '.') }}</span>
                         <a href="{{ route('activities.show', $activity->slug) }}" class="btn btn-primary btn-sm">Beli Sekarang</a>
                     </div>
                 </div>

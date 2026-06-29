@@ -140,7 +140,7 @@ class ActivityAdminController extends Controller
                         'schedule_id' => $schedule->id,
                         'end_time'    => $schedule->end_time,
                         'capacity'    => $schedule->default_capacity,
-                        'price'       => $product->base_price,
+                        'price'       => $product->price_adult,
                         'status'      => 'available',
                     ]
                 );
@@ -164,7 +164,7 @@ class ActivityAdminController extends Controller
             'max_pax'          => 'required|integer|gte:min_pax',
             'level'            => 'nullable|in:beginner,intermediate,advanced',
             'min_age'          => 'nullable|integer|min:0',
-            'base_price'       => 'required|integer|min:0',
+            'price_adult'       => 'required|integer|min:0',
             'status'           => 'nullable|in:active,inactive,archived',
             'meta'             => 'nullable|array',
         ]);

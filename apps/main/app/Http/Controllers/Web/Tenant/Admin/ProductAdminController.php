@@ -94,7 +94,9 @@ class ProductAdminController extends Controller
         $filterStatus = $request->get('status', 'available');
 
         $query = ProductSlot::where('product_id', $id);
-        if ($filterStatus !== 'all') {
+        if ($filterStatus === 'tidak_tersedia') {
+            $query->whereIn('status', ['blocked', 'full', 'cancelled']);
+        } elseif ($filterStatus !== 'all') {
             $query->where('status', $filterStatus);
         }
         $slots = $query->orderBy('date')->orderBy('start_time')->paginate(20)->withQueryString();
@@ -108,14 +110,15 @@ class ProductAdminController extends Controller
         $product = Product::where('tenant_id', $tenant->id)->findOrFail($id);
 
         $data = $request->validate([
-            'start_date'   => ['required', 'date'],
-            'end_date'     => ['required', 'date', 'after_or_equal:start_date'],
-            'days_of_week' => ['required', 'array'],
-            'start_time'   => ['required'],
-            'end_time'     => ['required'],
-            'capacity'     => ['required', 'integer', 'min:1'],
-            'price_adult'  => ['required', 'integer', 'min:0'],
-            'price_child'  => ['nullable', 'integer', 'min:0'],
+            'start_date'     => ['required', 'date'],
+            'end_date'       => ['required', 'date', 'after_or_equal:start_date'],
+            'days_of_week'   => ['required', 'array'],
+            'start_time'     => ['required'],
+            'end_time'       => ['required'],
+            'capacity'       => ['required', 'integer', 'min:1'],
+            'spare_capacity' => ['nullable', 'integer', 'min:0', 'max:10'],
+            'price_adult'    => ['required', 'integer', 'min:0'],
+            'price_child'    => ['nullable', 'integer', 'min:0'],
         ]);
 
         $start   = \Carbon\Carbon::parse($data['start_date']);
@@ -130,13 +133,14 @@ class ProductAdminController extends Controller
                 'date'       => $d->toDateString(),
                 'start_time' => $data['start_time'],
             ], [
-                'tenant_id'    => $tenant->id,
-                'end_time'     => $data['end_time'],
-                'capacity'     => $data['capacity'],
-                'booked_count' => 0,
-                'price_adult'  => $data['price_adult'],
-                'price_child'  => $data['price_child'] ?? null,
-                'status'       => 'available',
+                'tenant_id'      => $tenant->id,
+                'end_time'       => $data['end_time'],
+                'capacity'       => $data['capacity'],
+                'spare_capacity' => $data['spare_capacity'] ?? 0,
+                'booked_count'   => 0,
+                'price_adult'    => $data['price_adult'],
+                'price_child'    => $data['price_child'] ?? null,
+                'status'         => 'available',
             ]);
             $created++;
         }
@@ -151,7 +155,7 @@ class ProductAdminController extends Controller
 
         $data = $request->validate([
             'slot_ids_json' => ['required', 'string'],
-            'status'        => ['required', 'in:available,full,blocked,cancelled'],
+            'status'        => ['required', 'in:available,blocked'],
             'product_id'    => ['required', 'integer'],
         ]);
 
@@ -162,7 +166,7 @@ class ProductAdminController extends Controller
             return back()->with('error', 'Tidak ada slot yang dipilih.');
         }
 
-        $statusLabels = ['available' => 'Tersedia', 'full' => 'Penuh', 'blocked' => 'Diblokir', 'cancelled' => 'Dibatalkan'];
+        $statusLabels = ['available' => 'Tersedia', 'blocked' => 'Tidak Tersedia'];
 
         $updated = ProductSlot::where('tenant_id', $tenant->id)
             ->whereIn('id', $ids)
@@ -219,14 +223,22 @@ class ProductAdminController extends Controller
         $tenant = \Illuminate\Support\Facades\App::make('current_tenant');
         $slot   = ProductSlot::where('tenant_id', $tenant->id)->findOrFail($slotId);
 
-        $slot->update($request->validate([
-            'start_time'  => ['sometimes', 'date_format:H:i'],
-            'end_time'    => ['sometimes', 'date_format:H:i'],
-            'capacity'    => ['sometimes', 'integer', 'min:0'],
-            'price_adult' => ['sometimes', 'numeric', 'min:0'],
-            'price_child' => ['sometimes', 'nullable', 'numeric', 'min:0'],
-            'status'      => ['sometimes', 'in:available,full,blocked,cancelled'],
-        ]));
+        $validated = $request->validate([
+            'start_time'     => ['sometimes', 'date_format:H:i'],
+            'end_time'       => ['sometimes', 'date_format:H:i'],
+            'capacity'       => ['sometimes', 'integer', 'min:0'],
+            'spare_capacity' => ['sometimes', 'integer', 'min:0', 'max:10'],
+            'price_adult'    => ['sometimes', 'numeric', 'min:0'],
+            'price_child'    => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'status'         => ['sometimes', 'in:available,blocked'],
+        ]);
+
+        $slot->update($validated);
+
+        // Jika admin tidak mengubah status secara eksplisit, sync otomatis berdasarkan kapasitas
+        if (! isset($validated['status'])) {
+            $slot->syncStatus();
+        }
 
         return back()->with('success', 'Slot diupdate.');
     }

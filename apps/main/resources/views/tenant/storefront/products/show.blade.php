@@ -24,7 +24,7 @@
         'id'          => $s->id,
         'date'        => \Carbon\Carbon::parse($s->date)->format('Y-m-d'),
         'time'        => \Carbon\Carbon::parse($s->start_time)->format('H:i') . ' – ' . \Carbon\Carbon::parse($s->end_time)->format('H:i'),
-        'available'   => max(0, $s->capacity - $s->booked_count),
+        'available'   => $s->remaining_capacity,
         'price_adult' => (int) $s->price_adult,
         'price_child' => (int) ($s->price_child ?? $s->price_adult),
     ])->values()->toJson();
@@ -464,8 +464,8 @@
                     <span class="small fw-semibold">Pilih Tanggal Kunjungan</span>
                     <div class="d-flex align-items-center gap-3">
                         <span class="d-flex align-items-center gap-1" style="font-size:.72rem;color:#6c757d">
-                            <span style="color:#198754;font-size:.6rem">●</span> Tersedia
-                            <span class="ms-1" style="color:#dc3545;font-size:.6rem">●</span> Habis
+                            <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#198754"></span> Tersedia
+                            <span class="ms-1" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#dc3545"></span> Penuh
                         </span>
                         <div class="d-flex gap-1">
                             <button type="button" class="btn btn-outline-secondary btn-sm px-1 py-0 lh-1" style="font-size:.75rem" @click="prevMonth()"><i class="bi bi-chevron-left"></i></button>
@@ -490,25 +490,38 @@
                                     @click="selectCalDate(day)"
                                     x-text="day"></button>
                             <span x-show="day !== null && !calIsPast(day) && calDateStatus(day) !== null"
-                                  style="width:5px;height:5px;border-radius:50%;margin-top:1px;display:block"
-                                  :style="calDateStatus(day)==='available'?'background:#198754':'background:#dc3545'"></span>
+                                  style="width:6px;height:6px;border-radius:50%;margin-top:2px;display:block"
+                                  :style="calDateStatus(day)==='available'?'background:#198754;box-shadow:0 0 0 1px #198754':'background:#dc3545;box-shadow:0 0 0 1px #dc3545'"></span>
                         </div>
                     </template>
                 </div>
 
-                <div class="small fw-semibold mb-2">Pilih Slot Waktu</div>
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <div class="small fw-semibold">Pilih Slot Waktu</div>
+                    <div class="d-flex align-items-center gap-2" style="font-size:.68rem;color:#6c757d">
+                        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#198754;flex-shrink:0"></span>Tersedia
+                        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#dc3545;flex-shrink:0;margin-left:4px"></span>Penuh
+                    </div>
+                </div>
                 <div x-show="slotsForDate.length === 0" class="text-muted small mb-3">Silakan pilih tanggal.</div>
                 <div class="d-flex flex-wrap gap-2 mb-4" x-show="slotsForDate.length > 0">
                     <template x-for="slot in slotsForDate" :key="slot.id">
                         <button type="button"
                                 class="text-start rounded-3 px-3 py-2"
-                                style="border:1.5px solid;min-width:130px;background:#fff;cursor:pointer"
-                                :style="slot.available < 1 ? 'opacity:.45;cursor:not-allowed' : ''"
-                                :class="selectedSlot?.id === slot.id ? 'border-primary' : 'border-secondary'"
+                                style="border:1.5px solid;min-width:130px;background:#fff;cursor:pointer;transition:border-color .15s"
+                                :style="slot.available < 1 ? 'cursor:not-allowed;background:#fef2f2' : ''"
+                                :class="selectedSlot?.id === slot.id ? 'border-primary' : (slot.available < 1 ? 'border-danger' : 'border-secondary')"
                                 :disabled="slot.available < 1"
                                 @click="selectSlot(slot)">
-                            <div class="fw-bold text-primary" style="font-size:.85rem" x-text="slot.time"></div>
-                            <div class="text-muted" style="font-size:.72rem" x-text="slot.available + ' tersisa'"></div>
+                            <div class="fw-bold" style="font-size:.85rem"
+                                 :class="slot.available < 1 ? 'text-danger' : 'text-primary'"
+                                 x-text="slot.time"></div>
+                            <div style="font-size:.7rem;margin-top:2px;display:flex;align-items:center;gap:3px">
+                                <span style="display:inline-block;width:6px;height:6px;border-radius:50%;flex-shrink:0"
+                                      :style="slot.available < 1 ? 'background:#dc3545' : 'background:#198754'"></span>
+                                <span :class="slot.available < 1 ? 'text-danger fw-semibold' : 'text-success'"
+                                      x-text="slot.available < 1 ? 'Penuh' : slot.available + ' tersisa'"></span>
+                            </div>
                         </button>
                     </template>
                 </div>

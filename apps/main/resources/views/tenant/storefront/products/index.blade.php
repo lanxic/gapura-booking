@@ -108,7 +108,7 @@
                             <div>
                                 <div class="text-muted" style="font-size:.72rem">Mulai dari</div>
                                 <span class="fw-bold text-primary fs-5">
-                                    Rp {{ number_format($product->base_price, 0, ',', '.') }}
+                                    Rp {{ number_format($product->price_adult, 0, ',', '.') }}
                                 </span>
                             </div>
                             <a href="{{ route('tenant.products.show', $product->slug) }}"
@@ -166,7 +166,7 @@
                     </div>
                     <div class="card-footer bg-transparent border-0 d-flex justify-content-between align-items-center pb-3 px-3">
                         <span class="fw-bold text-primary">
-                            Rp {{ number_format($product->base_price, 0, ',', '.') }}
+                            Rp {{ number_format($product->price_adult, 0, ',', '.') }}
                         </span>
                         <a href="{{ route('tenant.products.show', $product->slug) }}"
                            class="btn btn-primary btn-sm">Beli Sekarang</a>

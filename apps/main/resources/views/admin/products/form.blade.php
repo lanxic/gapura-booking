@@ -56,9 +56,9 @@
 
                 <div class="col-md-3">
                     <label class="form-label fw-semibold small">Harga Dasar (Rp) <span class="text-danger">*</span></label>
-                    <input type="number" name="base_price" class="form-control @error('base_price') is-invalid @enderror"
-                           value="{{ old('base_price', $product?->base_price) }}" min="0" required>
-                    @error('base_price')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    <input type="number" name="price_adult" class="form-control @error('price_adult') is-invalid @enderror"
+                           value="{{ old('price_adult', $product?->price_adult) }}" min="0" required>
+                    @error('price_adult')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
 
                 <div class="col-md-3">

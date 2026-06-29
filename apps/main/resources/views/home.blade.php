@@ -61,7 +61,7 @@
                     </div>
                     <p class="text-muted small mb-0">{{ $activity->short_description }}</p>
                     <div class="alc-footer">
-                        <span class="fw-bold text-primary fs-5">Rp {{ number_format($activity->base_price, 0, ',', '.') }}</span>
+                        <span class="fw-bold text-primary fs-5">Rp {{ number_format($activity->price_adult, 0, ',', '.') }}</span>
                         <a href="{{ route('activities.show', $activity->slug) }}" class="btn btn-primary btn-sm px-4">Beli Sekarang</a>
                     </div>
                 </div>
@@ -97,7 +97,7 @@
                         <h6 class="fw-bold mb-1">{{ $activity->name }}</h6>
                         <p class="text-muted small mb-2">{{ Str::limit($activity->short_description, 60) }}</p>
                         <div class="d-flex justify-content-between align-items-center">
-                            <span class="fw-bold text-primary small">Rp {{ number_format($activity->base_price, 0, ',', '.') }}</span>
+                            <span class="fw-bold text-primary small">Rp {{ number_format($activity->price_adult, 0, ',', '.') }}</span>
                             <a href="{{ route('activities.show', $activity->slug) }}" class="btn btn-outline-primary btn-sm py-0 px-3">Detail</a>
                         </div>
                     </div>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Models\Customer;
 use App\Models\PaymentGateway;
 use App\Models\ProductAddon;
 use App\Models\ProductSlot;
@@ -11,6 +12,7 @@ use App\Services\InvoiceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class CheckoutController extends Controller
 {
@@ -21,7 +23,7 @@ class CheckoutController extends Controller
 
     public function index(Request $request)
     {
-        $user = Auth::guard('web')->user();
+        $user = Auth::guard('customer')->user();
         $view = $this->checkoutView();
 
         $activeOnlineGateway   = PaymentGateway::where('type', 'online')->where('is_active', true)->first();
@@ -55,7 +57,7 @@ class CheckoutController extends Controller
 
     public function store(Request $request)
     {
-        $user = Auth::guard('web')->user();
+        $user = Auth::guard('customer')->user();
 
         if ($request->boolean('cart_checkout') && !$this->cart->isEmpty()) {
             return $this->storeFromCart($request, $user);
@@ -66,7 +68,8 @@ class CheckoutController extends Controller
             'pax_count'      => ['required', 'integer', 'min:1'],
             'guest_name'     => ['required', 'string', 'max:255'],
             'guest_email'    => ['required', 'email'],
-            'guest_phone'    => ['nullable', 'string', 'max:30'],
+            'guest_phone'    => ['required', 'string', 'max:30'],
+            'password'       => ['nullable', 'string', 'min:6'],
             'country'        => ['nullable', 'string', 'max:10'],
             'promo_code'     => ['nullable', 'string'],
             'payment_plan'   => ['nullable', 'string'],
@@ -75,10 +78,14 @@ class CheckoutController extends Controller
             'agree_terms'    => ['accepted'],
         ]);
 
+        if (! $user) {
+            $user = $this->registerGuestUser($data);
+        }
+
         $data['addons']      = $this->decodeAddonsJson($data['addons_json'] ?? '[]');
         $data['customer_id'] = $user?->id;
         $paymentMethod       = $data['payment_method'];
-        unset($data['addons_json']);
+        unset($data['addons_json'], $data['password']);
 
         try {
             $invoice = $this->invoiceService->createFromCheckout($data);
@@ -105,18 +112,24 @@ class CheckoutController extends Controller
         return $this->invoiceRedirect($invoice->invoice_code);
     }
 
-    private function storeFromCart(Request $request, $user)
+    private function storeFromCart(Request $request, ?Customer $user)
     {
         $data = $request->validate([
             'guest_name'     => ['required', 'string', 'max:255'],
             'guest_email'    => ['required', 'email'],
-            'guest_phone'    => ['nullable', 'string', 'max:30'],
+            'guest_phone'    => ['required', 'string', 'max:30'],
+            'password'       => ['nullable', 'string', 'min:6'],
             'country'        => ['nullable', 'string', 'max:10'],
             'promo_code'     => ['nullable', 'string'],
             'payment_method' => ['required', 'string', 'in:midtrans,doku,cash,bank_transfer'],
             'agree_terms'    => ['accepted'],
         ]);
 
+        if (! $user) {
+            $user = $this->registerGuestUser($data);
+        }
+
+        unset($data['password']);
         $paymentMethod = $data['payment_method'];
         $items         = $this->cart->items();
         $invoices      = [];
@@ -172,6 +185,38 @@ class CheckoutController extends Controller
         $bookingsRoute = app()->bound('current_tenant') ? 'tenant.account.bookings' : 'account.bookings';
         return redirect()->route($bookingsRoute)
             ->with('success', count($invoices) . ' tiket berhasil dipesan!');
+    }
+
+    private function registerGuestUser(array $data): ?Customer
+    {
+        if (empty($data['password'])) {
+            return null;
+        }
+
+        $existing = Customer::where('email', $data['guest_email'])->first();
+        if ($existing) {
+            // Email sudah terdaftar — verifikasi password sebelum login
+            if (! $existing->password_hash || ! Hash::check($data['password'], $existing->password_hash)) {
+                // Password salah atau akun via Google (no password) → lanjut sebagai guest
+                return null;
+            }
+            if (! $existing->phone && ! empty($data['guest_phone'])) {
+                $existing->update(['phone' => $data['guest_phone']]);
+            }
+            Auth::guard('customer')->login($existing);
+            return $existing;
+        }
+
+        $customer = Customer::create([
+            'name'          => $data['guest_name'],
+            'email'         => $data['guest_email'],
+            'phone'         => $data['guest_phone'],
+            'password_hash' => Hash::make($data['password']),
+        ]);
+
+        Auth::guard('customer')->login($customer);
+
+        return $customer;
     }
 
     private function checkoutView(): string

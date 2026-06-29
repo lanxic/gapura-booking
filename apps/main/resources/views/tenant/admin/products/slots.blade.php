@@ -48,13 +48,14 @@
 
         {{-- Generate form --}}
         <div class="card" x-data="{
-            mode: 'custom',
+            mode: 'all_day',
             startDate: '',
             endDate: '',
             startTime: '09:00',
             endTime: '17:00',
-            days: [1,2,3,4,5],
-            dayLabels: ['Min','Sen','Sel','Rab','Kam','Jum','Sab'],
+            activeRange: '7d',
+            days: [0,1,2,3,4,5,6],
+            init() { this.setDatePreset('7d'); },
             toggleDay(i) {
                 this.days.includes(i)
                     ? this.days = this.days.filter(d => d !== i)
@@ -75,8 +76,9 @@
                     const e = new Date(today.getFullYear(), today.getMonth()+1, 0);
                     this.endDate = fmt(e);
                 }
+                this.activeRange = preset;
             }
-        }">
+        }" x-init="init()">
             <div class="card-header py-3 px-4 d-flex align-items-center justify-content-between">
                 <h6 class="mb-0 fw-semibold"><i class="bi bi-magic me-2 text-primary"></i>Generate Slot</h6>
             </div>
@@ -90,8 +92,8 @@
                         <label class="form-label fw-semibold small">Mode Slot</label>
                         <div class="d-flex gap-2">
                             <button type="button" class="btn btn-sm flex-fill"
-                                    :class="mode === 'allday' ? 'btn-primary' : 'btn-outline-secondary'"
-                                    @click="mode = 'allday'">
+                                    :class="mode === 'all_day' ? 'btn-primary' : 'btn-outline-secondary'"
+                                    @click="mode = 'all_day'">
                                 <i class="bi bi-sun me-1"></i>All Day
                             </button>
                             <button type="button" class="btn btn-sm flex-fill"
@@ -100,7 +102,7 @@
                                 <i class="bi bi-clock me-1"></i>Custom Jam
                             </button>
                         </div>
-                        <div class="form-text" x-show="mode === 'allday'">Slot tidak terikat jam, cocok untuk tiket harian.</div>
+                        <div class="form-text" x-show="mode === 'all_day'">Slot tidak terikat jam, cocok untuk tiket harian.</div>
                         <div class="form-text" x-show="mode === 'custom'">Tentukan jam mulai & selesai spesifik.</div>
                     </div>
 
@@ -109,9 +111,9 @@
                         <div class="d-flex align-items-center justify-content-between mb-1">
                             <label class="form-label fw-semibold small mb-0">Rentang Tanggal</label>
                             <div class="d-flex gap-1">
-                                <button type="button" class="btn btn-xs btn-outline-secondary" style="font-size:.7rem;padding:.15rem .4rem" @click="setDatePreset('7d')">7H</button>
-                                <button type="button" class="btn btn-xs btn-outline-secondary" style="font-size:.7rem;padding:.15rem .4rem" @click="setDatePreset('30d')">30H</button>
-                                <button type="button" class="btn btn-xs btn-outline-secondary" style="font-size:.7rem;padding:.15rem .4rem" @click="setDatePreset('month')">Bln Ini</button>
+                                <button type="button" class="btn btn-xs" :class="activeRange==='7d' ? 'btn-secondary' : 'btn-outline-secondary'" style="font-size:.7rem;padding:.15rem .4rem" @click="setDatePreset('7d')">7H</button>
+                                <button type="button" class="btn btn-xs" :class="activeRange==='30d' ? 'btn-secondary' : 'btn-outline-secondary'" style="font-size:.7rem;padding:.15rem .4rem" @click="setDatePreset('30d')">30H</button>
+                                <button type="button" class="btn btn-xs" :class="activeRange==='month' ? 'btn-secondary' : 'btn-outline-secondary'" style="font-size:.7rem;padding:.15rem .4rem" @click="setDatePreset('month')">Bln Ini</button>
                             </div>
                         </div>
                     </div>
@@ -119,12 +121,12 @@
                         <div class="col-6">
                             <label class="form-label small text-muted mb-1">Dari</label>
                             <input type="date" name="start_date" class="form-control form-control-sm"
-                                   :value="startDate" @change="startDate = $event.target.value" required>
+                                   x-model="startDate" @change="activeRange = ''" required>
                         </div>
                         <div class="col-6">
                             <label class="form-label small text-muted mb-1">Sampai</label>
                             <input type="date" name="end_date" class="form-control form-control-sm"
-                                   :value="endDate" @change="endDate = $event.target.value" required>
+                                   x-model="endDate" @change="activeRange = ''" required>
                         </div>
                     </div>
 
@@ -139,15 +141,14 @@
                             </div>
                         </div>
                         <div class="d-flex gap-1 flex-wrap">
-                            <template x-for="(label, i) in dayLabels" :key="i">
-                                <button type="button"
-                                        class="btn btn-sm"
-                                        :class="days.includes(i) ? 'btn-primary' : 'btn-outline-secondary'"
-                                        style="min-width:44px"
-                                        @click="toggleDay(i)"
-                                        x-text="label">
-                                </button>
-                            </template>
+                            @php $dayLabels = ['Min','Sen','Sel','Rab','Kam','Jum','Sab']; @endphp
+                            @foreach($dayLabels as $i => $day)
+                            <button type="button"
+                                    class="btn btn-sm"
+                                    :class="days.includes({{ $i }}) ? 'btn-primary' : 'btn-outline-secondary'"
+                                    style="min-width:44px"
+                                    @click="toggleDay({{ $i }})">{{ $day }}</button>
+                            @endforeach
                         </div>
                         {{-- Submit selected days as hidden inputs --}}
                         <template x-for="d in days" :key="d">
@@ -156,8 +157,8 @@
                     </div>
 
                     {{-- Hidden time inputs (always submitted with correct values) --}}
-                    <input type="hidden" name="start_time" :value="mode === 'allday' ? '00:00' : startTime">
-                    <input type="hidden" name="end_time"   :value="mode === 'allday' ? '23:59' : endTime">
+                    <input type="hidden" name="start_time" :value="mode === 'all_day' ? '09:00' : startTime">
+                    <input type="hidden" name="end_time"   :value="mode === 'all_day' ? '17:00' : endTime">
 
                     {{-- Custom time inputs (visible only in custom mode) --}}
                     <div x-show="mode === 'custom'" class="mb-4">
@@ -177,12 +178,26 @@
 
                     {{-- Capacity & Price --}}
                     <div class="row g-2 mb-3">
-                        <div class="col-12">
+                        <div class="col-7">
                             <label class="form-label small fw-semibold">Kapasitas</label>
                             <div class="input-group input-group-sm">
                                 <span class="input-group-text"><i class="bi bi-people"></i></span>
                                 <input type="number" name="capacity" class="form-control"
                                        value="{{ $product->max_pax }}" min="1" required>
+                                <span class="input-group-text">pax</span>
+                            </div>
+                        </div>
+                        <div class="col-5">
+                            <label class="form-label small fw-semibold">
+                                Spare
+                                <span class="text-muted fw-normal" style="font-size:.7rem"
+                                      title="Buffer pax untuk transaksi bersamaan di sisa slot terakhir">
+                                    <i class="bi bi-info-circle"></i>
+                                </span>
+                            </label>
+                            <div class="input-group input-group-sm">
+                                <input type="number" name="spare_capacity" class="form-control"
+                                       value="0" min="0" max="10">
                                 <span class="input-group-text">pax</span>
                             </div>
                         </div>
@@ -326,11 +341,9 @@
                 <div class="d-flex gap-1">
                     @php
                         $filterTabs = [
-                            'available' => ['label' => 'Tersedia',   'color' => 'success'],
-                            'blocked'   => ['label' => 'Diblokir',   'color' => 'secondary'],
-                            'full'      => ['label' => 'Penuh',      'color' => 'danger'],
-                            'cancelled' => ['label' => 'Dibatalkan', 'color' => 'dark'],
-                            'all'       => ['label' => 'Semua',      'color' => 'primary'],
+                            'available'      => ['label' => 'Tersedia',       'color' => 'success'],
+                            'tidak_tersedia' => ['label' => 'Tidak Tersedia', 'color' => 'danger'],
+                            'all'            => ['label' => 'Semua',          'color' => 'primary'],
                         ];
                     @endphp
                     @foreach($filterTabs as $val => $tab)
@@ -356,11 +369,9 @@
                     @csrf
                     <input type="hidden" name="product_id" value="{{ $product->id }}">
                     <input type="hidden" name="slot_ids_json" value="">
-                    <select name="status" class="form-select form-select-sm" style="width:140px">
-                        <option value="blocked">Diblokir</option>
+                    <select name="status" class="form-select form-select-sm" style="width:160px">
                         <option value="available">Tersedia</option>
-                        <option value="cancelled">Dibatalkan</option>
-                        <option value="full">Penuh</option>
+                        <option value="blocked">Tidak Tersedia</option>
                     </select>
                     <button type="submit" class="btn btn-sm btn-primary">Terapkan</button>
                     <button type="button" class="btn btn-sm btn-outline-secondary" @click="selected = []">Batalkan Pilihan</button>
@@ -384,10 +395,10 @@
                 </thead>
                 @forelse($slots as $slot)
                 @php
-                    $isAllDay = $slot->start_time->format('H:i') === '00:00'
-                             && $slot->end_time->format('H:i')   === '23:59';
-                    $fillPct  = $slot->capacity > 0
-                        ? round($slot->booked_count / $slot->capacity * 100)
+                    $isAllDay = ($slot->start_time->format('H:i') === '09:00' && $slot->end_time->format('H:i') === '17:00')
+                             || ($slot->start_time->format('H:i') === '00:00' && $slot->end_time->format('H:i') === '23:59');
+                    $fillPct  = $slot->total_capacity > 0
+                        ? round($slot->booked_count / $slot->total_capacity * 100)
                         : 0;
                     $fillColor = $fillPct >= 100 ? 'danger' : ($fillPct >= 70 ? 'warning' : 'success');
                 @endphp
@@ -425,7 +436,10 @@
                                     </div>
                                 </div>
                                 <span class="small text-muted text-nowrap">
-                                    {{ $slot->booked_count }}/{{ $slot->capacity }}
+                                    {{ $slot->booked_count }}/{{ $slot->total_capacity }}
+                                    @if($slot->spare_capacity > 0)
+                                    <span class="text-warning" title="Termasuk {{ $slot->spare_capacity }} spare">+{{ $slot->spare_capacity }}</span>
+                                    @endif
                                 </span>
                             </div>
                         </td>
@@ -437,13 +451,10 @@
                         </td>
                         <td>
                             @php
-                                $statusMap = [
-                                    'available' => ['success', 'Tersedia'],
-                                    'full'      => ['danger',  'Penuh'],
-                                    'blocked'   => ['secondary','Diblokir'],
-                                    'cancelled' => ['dark',    'Dibatalkan'],
-                                ];
-                                [$sc, $sl] = $statusMap[$slot->status] ?? ['secondary', $slot->status];
+                                $isAvailable = $slot->status === 'available';
+                                [$sc, $sl] = $isAvailable
+                                    ? ['success', 'Tersedia']
+                                    : ['danger',  'Tidak Tersedia'];
                             @endphp
                             <span class="badge bg-{{ $sc }}-subtle text-{{ $sc }} border border-{{ $sc }}-subtle">
                                 {{ $sl }}
@@ -475,7 +486,12 @@
                                 <div>
                                     <label class="form-label small fw-semibold mb-1">Kapasitas</label>
                                     <input type="number" name="capacity" class="form-control form-control-sm"
-                                           value="{{ $slot->capacity }}" min="0" style="width:90px">
+                                           value="{{ $slot->capacity }}" min="0" style="width:80px">
+                                </div>
+                                <div>
+                                    <label class="form-label small fw-semibold mb-1">Spare <i class="bi bi-info-circle text-muted" title="Buffer transaksi bersamaan"></i></label>
+                                    <input type="number" name="spare_capacity" class="form-control form-control-sm"
+                                           value="{{ $slot->spare_capacity }}" min="0" max="10" style="width:70px">
                                 </div>
                                 <div>
                                     <label class="form-label small fw-semibold mb-1">Harga Dewasa</label>
@@ -495,10 +511,9 @@
                                 </div>
                                 <div>
                                     <label class="form-label small fw-semibold mb-1">Status</label>
-                                    <select name="status" class="form-select form-select-sm" style="width:130px">
-                                        @foreach(['available' => 'Tersedia','full' => 'Penuh','blocked' => 'Diblokir','cancelled' => 'Dibatalkan'] as $val => $label)
-                                        <option value="{{ $val }}" {{ $slot->status === $val ? 'selected' : '' }}>{{ $label }}</option>
-                                        @endforeach
+                                    <select name="status" class="form-select form-select-sm" style="width:160px">
+                                        <option value="available" {{ $slot->status === 'available' ? 'selected' : '' }}>Tersedia</option>
+                                        <option value="blocked"   {{ $slot->status !== 'available' ? 'selected' : '' }}>Tidak Tersedia</option>
                                     </select>
                                 </div>
                                 <div class="d-flex gap-2">

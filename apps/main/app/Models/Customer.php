@@ -41,6 +41,11 @@ class Customer extends Authenticatable implements JWTSubject
         return $this->password_hash ?? '';
     }
 
+    public function getAuthPasswordName(): string
+    {
+        return 'password_hash';
+    }
+
     public function bookings(): HasMany
     {
         return $this->hasMany(Booking::class);

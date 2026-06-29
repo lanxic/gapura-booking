@@ -60,12 +60,10 @@ class BookingService
                 }
             }
 
-            // Update slot inventory
-            $slot = $booking->slot;
+            // Update slot inventory — lockForUpdate agar webhook bersamaan tidak baca nilai stale
+            $slot = \App\Models\ProductSlot::lockForUpdate()->findOrFail($booking->slot_id);
             $slot->increment('booked_count', $booking->pax_count);
-            if ($slot->booked_count >= $slot->capacity) {
-                $slot->update(['status' => 'full']);
-            }
+            $slot->syncStatus();
 
             // Hapus slot lock Redis
             Redis::del("slot_lock:{$invoice->checkout_slot_id}");
