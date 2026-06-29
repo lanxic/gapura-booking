@@ -54,8 +54,8 @@
                             <label class="form-label fw-semibold">Kategori <span class="text-danger">*</span></label>
                             <select name="category" class="form-select @error('category') is-invalid @enderror" required>
                                 <option value="">— Pilih —</option>
-                                <option value="indoor"  {{ old('category', $product?->category) === 'indoor'  ? 'selected' : '' }}>🏠 Indoor</option>
-                                <option value="outdoor" {{ old('category', $product?->category) === 'outdoor' ? 'selected' : '' }}>🌿 Outdoor</option>
+                                <option value="indoor"  {{ old('category', $product?->category) === 'indoor'  ? 'selected' : '' }}>Indoor</option>
+                                <option value="outdoor" {{ old('category', $product?->category) === 'outdoor' ? 'selected' : '' }}>Outdoor</option>
                             </select>
                             @error('category')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>

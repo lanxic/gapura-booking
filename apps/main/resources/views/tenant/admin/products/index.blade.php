@@ -99,7 +99,7 @@
                         <span class="badge bg-{{ $product->category === 'outdoor' ? 'success' : 'info' }}-subtle
                                            text-{{ $product->category === 'outdoor' ? 'success' : 'info' }}
                                            border border-{{ $product->category === 'outdoor' ? 'success' : 'info' }}-subtle">
-                            {{ $product->category === 'outdoor' ? '🌿 Outdoor' : '🏠 Indoor' }}
+                            {{ $product->category === 'outdoor' ? 'Outdoor' : 'Indoor' }}
                         </span>
                     </td>
                     <td class="small">Rp {{ number_format($product->price_adult, 0, ',', '.') }}</td>
