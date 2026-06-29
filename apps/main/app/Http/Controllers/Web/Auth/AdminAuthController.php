@@ -34,7 +34,7 @@ class AdminAuthController extends Controller
 
         if ($isTenant) {
             $tenant = app('current_tenant');
-            if (!in_array($user->role->value, ['super_admin']) && $user->tenant_id !== $tenant->id) {
+            if (!in_array($user->role->value, ['super_admin']) && (int) $user->tenant_id !== (int) $tenant->id) {
                 return back()->withErrors(['email' => 'Akun tidak terdaftar di tenant ini.'])->onlyInput('email');
             }
         }
