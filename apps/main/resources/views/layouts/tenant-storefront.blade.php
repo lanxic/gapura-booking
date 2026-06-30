@@ -11,6 +11,29 @@
 </head>
 <body>
 
+    {{-- Demo ribbon — hanya untuk tenant adventure --}}
+    @if($tenant->slug === 'adventure')
+    <div style="
+        position: fixed;
+        top: 20px;
+        right: -32px;
+        z-index: 9999;
+        width: 140px;
+        background: #dc3545;
+        color: #fff;
+        font-size: .72rem;
+        font-weight: 700;
+        letter-spacing: .12em;
+        text-align: center;
+        text-transform: uppercase;
+        padding: 5px 0;
+        transform: rotate(45deg);
+        transform-origin: center center;
+        box-shadow: 0 2px 6px rgba(0,0,0,.25);
+        pointer-events: none;
+    ">DEMO</div>
+    @endif
+
     {{-- Navbar --}}
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
         <div class="container">

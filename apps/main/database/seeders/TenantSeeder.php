@@ -17,13 +17,6 @@ class TenantSeeder extends Seeder
                 'is_active'      => true,
                 'settings'       => ['primary_color' => '#3b82f6'],
             ],
-            [
-                'name'           => 'Wellness Studio',
-                'slug'           => 'wellness',
-                'invoice_prefix' => 'WLS',
-                'is_active'      => true,
-                'settings'       => ['primary_color' => '#10b981'],
-            ],
         ];
 
         foreach ($tenants as $data) {

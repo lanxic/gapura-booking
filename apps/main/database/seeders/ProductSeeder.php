@@ -14,10 +14,8 @@ class ProductSeeder extends Seeder
     public function run(): void
     {
         $tenantAdventure = Tenant::where('slug', 'adventure')->firstOrFail();
-        $tenantWellness  = Tenant::where('slug', 'wellness')->firstOrFail();
 
         $products = [
-            // Adventure Hub products
             [
                 'tenant_id'        => $tenantAdventure->id,
                 'name'             => 'Hiking Gunung Bunder',
@@ -65,55 +63,6 @@ class ProductSeeder extends Seeder
                     ['name' => 'Underwater Photo Package', 'price' => 100000],
                 ],
             ],
-            // Wellness Studio products
-            [
-                'tenant_id'        => $tenantWellness->id,
-                'name'             => 'Yoga Morning Flow',
-                'category'         => 'indoor',
-                'type'             => 'aktivitas',
-                'description'      => 'Kelas yoga pagi hari yang menyegarkan dengan instruktur berpengalaman. Cocok untuk semua level.',
-                'duration_minutes' => 60,
-                'min_pax'          => 1,
-                'max_pax'          => 15,
-                'level'            => 'beginner',
-                'min_age'          => 12,
-                'price_adult'      => 150000,
-                'status'           => 'active',
-                'is_featured'      => true,
-                'meta'             => ['equipment_provided' => true, 'dress_code' => 'Pakaian olahraga nyaman'],
-                'schedules'        => [
-                    ['day_of_week' => 1, 'start_time' => '07:00', 'end_time' => '08:00', 'default_capacity' => 15],
-                    ['day_of_week' => 3, 'start_time' => '07:00', 'end_time' => '08:00', 'default_capacity' => 15],
-                    ['day_of_week' => 5, 'start_time' => '07:00', 'end_time' => '08:00', 'default_capacity' => 15],
-                ],
-                'addons' => [
-                    ['name' => 'Yoga Mat Rental', 'price' => 25000],
-                    ['name' => 'Towel Set',       'price' => 20000],
-                ],
-            ],
-            [
-                'tenant_id'        => $tenantWellness->id,
-                'name'             => 'Pottery & Ceramics Workshop',
-                'category'         => 'indoor',
-                'type'             => 'aktivitas',
-                'description'      => 'Workshop membuat keramik dari tanah liat. Hasilnya bisa dibawa pulang setelah dibakar.',
-                'duration_minutes' => 90,
-                'min_pax'          => 1,
-                'max_pax'          => 10,
-                'level'            => 'beginner',
-                'min_age'          => 8,
-                'price_adult'      => 250000,
-                'status'           => 'active',
-                'meta'             => ['materials_included' => true, 'pickup_after_days' => 7],
-                'schedules'        => [
-                    ['day_of_week' => 6, 'start_time' => '13:00', 'end_time' => '14:30', 'default_capacity' => 10],
-                    ['day_of_week' => 0, 'start_time' => '13:00', 'end_time' => '14:30', 'default_capacity' => 10],
-                ],
-                'addons' => [
-                    ['name' => 'Extra Clay (500g)', 'price' => 30000],
-                    ['name' => 'Gift Wrapping',     'price' => 20000],
-                ],
-            ],
         ];
 
         foreach ($products as $productData) {
@@ -142,6 +91,6 @@ class ProductSeeder extends Seeder
             }
         }
 
-        $this->command->info('  Products seeded: ' . count($products) . ' produk (2 Adventure, 2 Wellness).');
+        $this->command->info('  Products seeded: ' . count($products) . ' produk (Adventure Hub).');
     }
 }

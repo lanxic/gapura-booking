@@ -13,7 +13,6 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         $tenantAdventure = Tenant::where('slug', 'adventure')->first();
-        $tenantWellness  = Tenant::where('slug', 'wellness')->first();
 
         $globalUsers = [
             ['name' => 'Super Admin',  'email' => 'superadmin@amartha.test', 'role' => UserRole::SuperAdmin,  'tenant_id' => null],
@@ -26,10 +25,6 @@ class UserSeeder extends Seeder
         if ($tenantAdventure) {
             $tenantUsers[] = ['name' => 'Admin Adventure', 'email' => 'admin@adventure.test', 'role' => UserRole::TenantAdmin, 'tenant_id' => $tenantAdventure->id];
             $tenantUsers[] = ['name' => 'Scanner Adventure', 'email' => 'scanner@adventure.test', 'role' => UserRole::Scanner, 'tenant_id' => $tenantAdventure->id];
-        }
-
-        if ($tenantWellness) {
-            $tenantUsers[] = ['name' => 'Admin Wellness', 'email' => 'admin@wellness.test', 'role' => UserRole::TenantAdmin, 'tenant_id' => $tenantWellness->id];
         }
 
         $allUsers = array_merge($globalUsers, $tenantUsers);

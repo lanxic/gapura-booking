@@ -21,7 +21,6 @@ class DatabaseSeeder extends Seeder
             [
                 ['super_admin',  'superadmin@amartha.test',  'localhost/admin'],
                 ['tenant_admin', 'admin@adventure.test',     'adventure.localhost/admin'],
-                ['tenant_admin', 'admin@wellness.test',      'wellness.localhost/admin'],
                 ['scanner',      'scanner@adventure.test',   'adventure.localhost/admin'],
                 ['customer',     'customer@amartha.test',    'Storefront tenant manapun'],
                 ['customer',     'customer2@amartha.test',   'Storefront tenant manapun'],
