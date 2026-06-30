@@ -36,7 +36,7 @@ class ProductController extends Controller
                 'addons'     => fn($q) => $q->where('is_active', true),
                 'schedules'  => fn($q) => $q->where('is_active', true)->orderBy('day_of_week'),
                 'slots'      => fn($q) => $q->where('date', '>=', now()->toDateString())
-                                           ->where('status', 'available')
+                                           ->whereIn('status', ['available', 'full'])
                                            ->orderBy('date')->orderBy('start_time'),
             ])
             ->firstOrFail();

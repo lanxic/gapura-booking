@@ -10,6 +10,22 @@
 .detail-body{font-size:.82rem;line-height:1.6;color:#495057}
 .detail-list{margin:0;padding-left:1.2rem;font-size:.82rem;line-height:1.6;color:#495057}
 .detail-list li+li{margin-top:.25rem}
+
+/* ── Calendar cells ── */
+.cal-cell{display:flex;flex-direction:column;align-items:center;padding:2px 0}
+.cal-btn{
+    width:36px;height:36px;min-width:36px;flex-shrink:0;
+    border:none;border-radius:50%;padding:0;
+    display:flex;align-items:center;justify-content:center;
+    font-size:.88rem;font-weight:600;cursor:pointer;
+    transition:background .12s,color .12s;
+    background:transparent;color:#374151
+}
+.cal-btn:disabled{color:#d1d5db;cursor:default;pointer-events:none}
+.cal-btn.is-today{background:#f0fdf4;color:#166534;box-shadow:inset 0 0 0 1.5px #16a34a}
+.cal-btn.is-selected{background:#166534;color:#fff;box-shadow:0 2px 8px rgba(22,101,52,.25)}
+.cal-btn:not(:disabled):not(.is-selected):hover{background:#f3f4f6}
+.cal-dot{width:5px;height:5px;border-radius:50%;margin-top:2px;flex-shrink:0}
 </style>
 @endpush
 
@@ -20,14 +36,27 @@
     $tomorrow = now()->addDay()->toDateString();
     $dayNames = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
 
-    $slotsJson = $product->slots->map(fn($s) => [
-        'id'          => $s->id,
-        'date'        => \Carbon\Carbon::parse($s->date)->format('Y-m-d'),
-        'time'        => \Carbon\Carbon::parse($s->start_time)->format('H:i') . ' – ' . \Carbon\Carbon::parse($s->end_time)->format('H:i'),
-        'available'   => $s->remaining_capacity,
-        'price_adult' => (int) $s->price_adult,
-        'price_child' => (int) ($s->price_child ?? $s->price_adult),
-    ])->values()->toJson();
+    $firstAvailableSlot = $product->slots->where('status', 'available')->first();
+    $calInitYear  = $firstAvailableSlot ? $firstAvailableSlot->date->year      : now()->year;
+    $calInitMonth = $firstAvailableSlot ? $firstAvailableSlot->date->month - 1 : now()->month - 1;
+
+    // Hanya kirim slot available ke widget booking (untuk picker & kapasitas)
+    $slotsJson = $product->slots
+        ->where('status', 'available')
+        ->map(fn($s) => [
+            'id'          => $s->id,
+            'date'        => $s->date->format('Y-m-d'),
+            'time'        => $s->start_time->format('H:i') . ' – ' . $s->end_time->format('H:i'),
+            'available'   => $s->remaining_capacity,
+            'price_adult' => (int) $s->price_adult,
+            'price_child' => (int) ($s->price_child ?? $s->price_adult),
+        ])->values()->toJson();
+
+    // Map tanggal → status untuk dot kalender (available | full)
+    $slotDateMapJson = $product->slots
+        ->groupBy(fn($s) => $s->date->format('Y-m-d'))
+        ->map(fn($daySlots) => $daySlots->contains(fn($s) => $s->remaining_capacity > 0) ? 'available' : 'full')
+        ->toJson();
 
     $addonsJson = $product->addons->map(fn($a) => [
         'id'      => $a->id,
@@ -138,8 +167,8 @@
          },
          formatRp(n) { return 'Rp ' + n.toLocaleString('id-ID'); },
          showCal:      false,
-         calYear:      new Date().getFullYear(),
-         calMonth:     new Date().getMonth(),
+         calYear:      {{ $calInitYear }},
+         calMonth:     {{ $calInitMonth }},
          calMonthNames: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
          calDayNames:   ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
          get calDays() {
@@ -175,16 +204,15 @@
          showBooking: false,
          openBooking() { const p=this.selectedDate.split('-'); this.calYear=parseInt(p[0]); this.calMonth=parseInt(p[1])-1; this.showBooking=true; },
          closeBooking() { this.showBooking=false; this.selectedSlot=null; },
-         get slotDateMap() {
-             const map={};
-             this.allSlots.forEach(s => {
-                 if(!(s.date in map)){map[s.date]=s.available>0?'available':'full';}
-                 else if(s.available>0){map[s.date]='available';}
-             });
-             return map;
-         },
+         slotDateMap:  {{ $slotDateMapJson }},
          calDateStatus(d) { return d?(this.slotDateMap[this.calDateStr(d)]??null):null; },
          get minSlotPrice() { return this.allSlots.length?Math.min(...this.allSlots.map(s=>s.price_adult)):0; },
+         get slotsAvailForDate() { return this.slotsForDate.filter(s=>s.available>0).length; },
+         get totalPaxForDate() { return this.slotsForDate.reduce((sum,s)=>sum+(s.available>0?s.available:0),0); },
+         get minPriceForDate() {
+             const s=this.slotsForDate.filter(s=>s.available>0);
+             return s.length?Math.min(...s.map(s=>s.price_adult)):this.minSlotPrice;
+         },
      }">
 
     @if($product->category)
@@ -404,14 +432,30 @@
         <div class="ticket-info">
             <div class="ticket-name">{{ $product->name }}</div>
             <div class="ticket-price mt-1">
-                Dari <strong x-text="formatRp(minSlotPrice)"></strong>
+                Dari <strong x-text="formatRp(slotsAvailForDate > 0 ? minPriceForDate : minSlotPrice)"></strong>
                 <span class="text-muted fw-normal"> / orang</span>
             </div>
-            <div class="text-muted small mt-1">
-                <i class="bi bi-calendar2-check me-1"></i>{{ $product->slots->count() }} slot tersedia
-            </div>
+            {{-- Slot availability for selected date --}}
+            <template x-if="slotsAvailForDate > 0">
+                <div class="text-success small mt-1 fw-medium">
+                    <i class="bi bi-calendar2-check me-1"></i>
+                    <span x-text="totalPaxForDate + ' pax tersedia'"></span>
+                </div>
+            </template>
+            <template x-if="slotsForDate.length > 0 && slotsAvailForDate === 0">
+                <div class="text-danger small mt-1 fw-medium">
+                    <i class="bi bi-calendar-x me-1"></i>Slot penuh untuk tanggal ini
+                </div>
+            </template>
+            <template x-if="slotsForDate.length === 0">
+                <div class="text-muted small mt-1">
+                    <i class="bi bi-calendar-minus me-1"></i>Tidak ada slot untuk tanggal ini
+                </div>
+            </template>
         </div>
-        <button type="button" class="btn btn-primary btn-sm px-4 align-self-start" @click="openBooking()">Pilih</button>
+        <button type="button" class="btn btn-primary btn-sm px-4 align-self-start"
+                :disabled="slotsAvailForDate === 0 && slotsForDate.length > 0"
+                @click="openBooking()">Pilih</button>
     </div>
 
     {{-- Expanded --}}
@@ -420,7 +464,7 @@
             <div>
                 <div class="ticket-name">{{ $product->name }}</div>
                 <div class="ticket-price mt-1">
-                    Dari <strong x-text="formatRp(minSlotPrice)"></strong>
+                    Dari <strong x-text="formatRp(slotsAvailForDate > 0 ? minPriceForDate : minSlotPrice)"></strong>
                     <span class="text-muted fw-normal"> / orang</span>
                 </div>
             </div>
@@ -460,38 +504,64 @@
 
             {{-- Calendar + Slot + Pax --}}
             <div class="col-md-7">
-                <div class="d-flex align-items-center justify-content-between mb-1">
-                    <span class="small fw-semibold">Pilih Tanggal Kunjungan</span>
+
+                {{-- Calendar header --}}
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div>
+                        <div style="font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af">Pilih Tanggal Kunjungan</div>
+                        <div class="fw-bold" style="font-size:1.1rem;color:#111827" x-text="calMonthNames[calMonth] + ' ' + calYear"></div>
+                    </div>
                     <div class="d-flex align-items-center gap-3">
-                        <span class="d-flex align-items-center gap-1" style="font-size:.72rem;color:#6c757d">
-                            <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#198754"></span> Tersedia
-                            <span class="ms-1" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#dc3545"></span> Penuh
-                        </span>
+                        <div class="d-flex align-items-center gap-3" style="font-size:.75rem;color:#6c757d">
+                            <span class="d-flex align-items-center gap-1">
+                                <span style="width:8px;height:8px;border-radius:50%;background:#16a34a;display:inline-block"></span>Tersedia
+                            </span>
+                            <span class="d-flex align-items-center gap-1">
+                                <span style="width:8px;height:8px;border-radius:50%;background:#dc2626;display:inline-block"></span>Tidak Tersedia
+                            </span>
+                        </div>
                         <div class="d-flex gap-1">
-                            <button type="button" class="btn btn-outline-secondary btn-sm px-1 py-0 lh-1" style="font-size:.75rem" @click="prevMonth()"><i class="bi bi-chevron-left"></i></button>
-                            <button type="button" class="btn btn-outline-secondary btn-sm px-1 py-0 lh-1" style="font-size:.75rem" @click="nextMonth()"><i class="bi bi-chevron-right"></i></button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                    style="width:32px;height:32px;padding:0;display:flex;align-items:center;justify-content:center"
+                                    @click="prevMonth()"><i class="bi bi-chevron-left" style="font-size:.8rem"></i></button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm"
+                                    style="width:32px;height:32px;padding:0;display:flex;align-items:center;justify-content:center"
+                                    @click="nextMonth()"><i class="bi bi-chevron-right" style="font-size:.8rem"></i></button>
                         </div>
                     </div>
                 </div>
-                <div class="small text-muted mb-2" x-text="calMonthNames[calMonth] + ' ' + calYear"></div>
-                <div style="display:grid;grid-template-columns:repeat(7,1fr);text-align:center">
+
+                {{-- Day names --}}
+                <div style="display:grid;grid-template-columns:repeat(7,1fr);text-align:center;margin-bottom:.35rem">
                     <template x-for="n in calDayNames" :key="n">
-                        <div x-text="n" style="font-size:.68rem;font-weight:600;color:#6c757d;padding:2px 0"></div>
+                        <div x-text="n" style="font-size:.72rem;font-weight:700;color:#9ca3af;padding:4px 0;letter-spacing:.03em"></div>
                     </template>
                 </div>
-                <div style="display:grid;grid-template-columns:repeat(7,1fr);text-align:center;margin-bottom:.75rem">
+
+                {{-- Day grid --}}
+                <div style="display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:1.25rem">
                     <template x-for="(day, idx) in calDays" :key="idx">
-                        <div style="display:flex;flex-direction:column;align-items:center;padding:2px">
-                            <button type="button"
-                                    x-show="day !== null && !calIsPast(day)"
-                                    class="btn rounded-circle p-0"
-                                    style="width:30px;height:30px;font-size:.8rem;line-height:1"
-                                    :class="calIsSelected(day) ? 'btn-primary text-white fw-bold' : 'btn-link cal-day'"
-                                    @click="selectCalDate(day)"
-                                    x-text="day"></button>
-                            <span x-show="day !== null && !calIsPast(day) && calDateStatus(day) !== null"
-                                  style="width:6px;height:6px;border-radius:50%;margin-top:2px;display:block"
-                                  :style="calDateStatus(day)==='available'?'background:#198754;box-shadow:0 0 0 1px #198754':'background:#dc3545;box-shadow:0 0 0 1px #dc3545'"></span>
+                        <div class="cal-cell">
+                            {{-- Empty filler for null days --}}
+                            <template x-if="day === null">
+                                <div style="width:36px;height:36px"></div>
+                            </template>
+                            {{-- Clickable day button --}}
+                            <template x-if="day !== null">
+                                <button type="button"
+                                        class="cal-btn"
+                                        :class="{
+                                            'is-selected': !calIsPast(day) && calIsSelected(day),
+                                            'is-today':    !calIsPast(day) && !calIsSelected(day) && calIsToday(day)
+                                        }"
+                                        :disabled="calIsPast(day)"
+                                        @click="selectCalDate(day)"
+                                        x-text="day"></button>
+                            </template>
+                            {{-- Availability dot --}}
+                            <div class="cal-dot"
+                                 x-show="day !== null && !calIsPast(day) && calDateStatus(day) !== null"
+                                 :style="calDateStatus(day)==='available'?'background:#16a34a':'background:#dc2626'"></div>
                         </div>
                     </template>
                 </div>
@@ -500,7 +570,7 @@
                     <div class="small fw-semibold">Pilih Slot Waktu</div>
                     <div class="d-flex align-items-center gap-2" style="font-size:.68rem;color:#6c757d">
                         <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#198754;flex-shrink:0"></span>Tersedia
-                        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#dc3545;flex-shrink:0;margin-left:4px"></span>Penuh
+                        <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#dc3545;flex-shrink:0;margin-left:4px"></span>Tidak Tersedia
                     </div>
                 </div>
                 <div x-show="slotsForDate.length === 0" class="text-muted small mb-3">Silakan pilih tanggal.</div>

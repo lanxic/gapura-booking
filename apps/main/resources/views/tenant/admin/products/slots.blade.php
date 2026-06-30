@@ -84,7 +84,7 @@
             </div>
             <div class="card-body p-4">
 
-                <form method="POST" action="{{ route('tenant.admin.products.generate-slots', $product->id) }}">
+                <form id="generateSlotForm" method="POST" action="{{ route('tenant.admin.products.generate-slots', $product->id) }}">
                     @csrf
 
                     {{-- Mode toggle --}}
@@ -220,8 +220,8 @@
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-primary w-100"
-                            onclick="return confirm('Generate slot untuk rentang tanggal yang dipilih?')">
+                    <button type="button" class="btn btn-primary w-100"
+                            @click="$dispatch('open-generate-modal', { start: startDate, end: endDate, days: days })">
                         <i class="bi bi-lightning-charge-fill me-1"></i>Generate Slot
                     </button>
                 </form>
@@ -541,6 +541,108 @@
             {{ $slots->links('pagination::bootstrap-5') }}
         </div>
 
+    </div>
+</div>
+
+{{-- ── Confirm Generate Modal ──────────────────────────────── --}}
+<div x-data="{
+        open: false,
+        startDate: '',
+        endDate: '',
+        days: [],
+        dayNames: ['Min','Sen','Sel','Rab','Kam','Jum','Sab'],
+        get dayLabels() {
+            return [...this.days].sort((a,b)=>a-b).map(d => this.dayNames[d]).join(', ');
+        },
+        get dateRange() {
+            if (!this.startDate || !this.endDate) return '—';
+            const fmt = s => {
+                const [y,m,d] = s.split('-');
+                return d + '/' + m + '/' + y;
+            };
+            return fmt(this.startDate) + ' s/d ' + fmt(this.endDate);
+        }
+     }"
+     @open-generate-modal.window="open = true; startDate = $event.detail.start; endDate = $event.detail.end; days = $event.detail.days"
+     x-cloak>
+
+    {{-- Backdrop --}}
+    <div x-show="open"
+         x-transition:enter="transition ease-out duration-150"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-100"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="position-fixed top-0 start-0 w-100 h-100"
+         style="background:rgba(0,0,0,.45);z-index:1050"
+         @click="open = false">
+    </div>
+
+    {{-- Dialog --}}
+    <div x-show="open"
+         x-transition:enter.duration.200ms
+         x-transition:leave.duration.150ms
+         class="position-fixed top-50 start-50 translate-middle"
+         style="z-index:1055;width:100%;max-width:420px;padding:0 1rem">
+
+        <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
+
+            {{-- Header --}}
+            <div class="card-header border-0 px-4 pt-4 pb-3 d-flex align-items-center justify-content-between"
+                 style="background:linear-gradient(135deg,#eef2ff 0%,#f8f9ff 100%)">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center"
+                         style="width:44px;height:44px;background:#4f46e5;flex-shrink:0">
+                        <i class="bi bi-lightning-charge-fill text-white fs-5"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 fw-bold" style="color:#1e1b4b">Generate Slot</h6>
+                        <p class="mb-0 text-muted small">Konfirmasi sebelum membuat slot</p>
+                    </div>
+                </div>
+                <button type="button"
+                        class="btn btn-sm btn-outline-secondary border-0 rounded-circle d-flex align-items-center justify-content-center p-0"
+                        style="width:32px;height:32px"
+                        @click="open = false">
+                    <i class="bi bi-x-lg" style="font-size:.8rem"></i>
+                </button>
+            </div>
+
+            {{-- Body --}}
+            <div class="card-body px-4 py-3">
+                <div class="rounded-3 p-3 mb-3 d-flex gap-3" style="background:#f8fafc;border:1px solid #e2e8f0">
+                    <div class="flex-fill">
+                        <div class="text-muted mb-1" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.04em">Rentang Tanggal</div>
+                        <div class="fw-semibold text-dark small" x-text="dateRange"></div>
+                    </div>
+                    <div style="width:1px;background:#e2e8f0;flex-shrink:0"></div>
+                    <div class="flex-fill">
+                        <div class="text-muted mb-1" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.04em">Hari</div>
+                        <div class="fw-semibold text-dark small" x-text="dayLabels || '—'"></div>
+                    </div>
+                </div>
+                <p class="mb-0 small text-muted">
+                    <i class="bi bi-info-circle me-1 text-primary"></i>
+                    Slot yang sudah ada pada tanggal yang sama tidak akan digandakan.
+                </p>
+            </div>
+
+            {{-- Footer --}}
+            <div class="card-footer border-0 px-4 pb-4 pt-2 d-flex gap-2 justify-content-end"
+                 style="background:transparent">
+                <button type="button" class="btn btn-outline-secondary px-4" @click="open = false">
+                    Batal
+                </button>
+                <button type="button"
+                        class="btn btn-primary px-4 d-flex align-items-center gap-2"
+                        @click="open = false; document.getElementById('generateSlotForm').submit()">
+                    <i class="bi bi-lightning-charge-fill"></i>
+                    Ya, Generate
+                </button>
+            </div>
+
+        </div>
     </div>
 </div>
 
