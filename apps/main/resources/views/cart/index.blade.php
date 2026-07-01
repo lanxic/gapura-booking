@@ -12,10 +12,6 @@
         </a>
     </div>
 
-    @if(session('error'))
-    <div class="alert alert-danger">{{ session('error') }}</div>
-    @endif
-
     @if($items->isEmpty())
     <div class="text-center py-5">
         <i class="bi bi-bag-x text-muted" style="font-size:3rem"></i>

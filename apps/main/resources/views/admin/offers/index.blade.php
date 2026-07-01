@@ -39,10 +39,10 @@
                 <td class="text-end">
                     <a href="{{ route('admin.offers.promo-codes', $offer) }}" class="btn btn-sm btn-outline-info">Promo Codes</a>
                     <a href="{{ route('admin.offers.edit', $offer) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
-                    <form method="POST" action="{{ route('admin.offers.destroy', $offer) }}" class="d-inline"
-                          onsubmit="return confirm('Hapus penawaran ini?')">
+                    <form method="POST" action="{{ route('admin.offers.destroy', $offer) }}" class="d-inline">
                         @csrf @method('DELETE')
-                        <button class="btn btn-sm btn-outline-danger">Hapus</button>
+                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                onclick="confirmModal('Hapus penawaran ini?', () => this.closest('form').submit())">Hapus</button>
                     </form>
                 </td>
             </tr>

@@ -48,10 +48,10 @@
                 <td class="text-end">
                     <a href="{{ route('admin.products.slots', $product->id) }}" class="btn btn-xs btn-outline-info btn-sm">Slots</a>
                     <a href="{{ route('admin.products.edit', $product) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
-                    <form method="POST" action="{{ route('admin.products.destroy', $product) }}" class="d-inline"
-                          onsubmit="return confirm('Hapus produk ini?')">
+                    <form method="POST" action="{{ route('admin.products.destroy', $product) }}" class="d-inline">
                         @csrf @method('DELETE')
-                        <button class="btn btn-sm btn-outline-danger">Hapus</button>
+                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                onclick="confirmModal('Hapus produk ini?', () => this.closest('form').submit())">Hapus</button>
                     </form>
                 </td>
             </tr>

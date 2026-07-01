@@ -60,14 +60,15 @@
                     </li>
                 </ul>
                 <ul class="navbar-nav ms-auto align-items-center gap-1">
-                    @if(isset($cartCount) && $cartCount > 0)
+                    @php $cartCount = count(session('cart', [])); @endphp
                     <li class="nav-item">
                         <a class="nav-link position-relative" href="{{ route('tenant.cart.index') }}">
                             <i class="bi bi-cart3 fs-5"></i>
+                            @if($cartCount > 0)
                             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size:.6rem">{{ $cartCount }}</span>
+                            @endif
                         </a>
                     </li>
-                    @endif
                     @auth('web')
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
@@ -160,6 +161,7 @@
         </div>
     </footer>
 
+    @include('components.confirm-modal')
     @stack('scripts')
 </body>
 </html>

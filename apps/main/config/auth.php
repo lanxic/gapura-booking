@@ -58,10 +58,6 @@ return [
             'driver' => 'jwt',
             'provider' => 'users',
         ],
-        'customer' => [
-            'driver' => 'jwt',
-            'provider' => 'users',
-        ],
         'supervisor' => [
             'driver' => 'jwt',
             'provider' => 'users',

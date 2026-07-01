@@ -12,10 +12,6 @@
         </a>
     </div>
 
-    @if(session('error'))
-    <div class="alert alert-danger">{{ session('error') }}</div>
-    @endif
-
     @if($items->isEmpty())
     <div class="text-center py-5">
         <i class="bi bi-bag-x text-muted" style="font-size:3rem"></i>
@@ -72,10 +68,10 @@
                                       class="mt-3 d-inline">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit"
+                                    <button type="button"
                                             class="btn btn-link p-0 text-danger"
                                             style="font-size:.85rem;text-decoration:none"
-                                            onclick="return confirm('Hapus item ini dari keranjang?')">
+                                            onclick="confirmModal('Hapus item ini dari keranjang?', () => this.closest('form').submit())">
                                         <i class="bi bi-trash3 me-1"></i>Hapus
                                     </button>
                                 </form>

@@ -49,10 +49,10 @@
                 </td>
                 <td class="text-end">
                     <a href="{{ route('admin.users.edit', $user) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
-                    <form method="POST" action="{{ route('admin.users.destroy', $user) }}" class="d-inline"
-                          onsubmit="return confirm('Hapus user ini?')">
+                    <form method="POST" action="{{ route('admin.users.destroy', $user) }}" class="d-inline">
                         @csrf @method('DELETE')
-                        <button class="btn btn-sm btn-outline-danger">Hapus</button>
+                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                onclick="confirmModal('Hapus user ini?', () => this.closest('form').submit())">Hapus</button>
                     </form>
                 </td>
             </tr>

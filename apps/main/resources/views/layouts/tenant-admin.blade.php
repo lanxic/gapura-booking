@@ -123,6 +123,7 @@
     </div>
 </div>
 
+@include('components.confirm-modal')
 @stack('scripts')
 </body>
 </html>

@@ -47,9 +47,10 @@
         <span class="small text-muted" x-text="selected.length + ' produk dipilih'"></span>
         <form method="POST" action="{{ route('tenant.admin.products.bulk-destroy') }}"
               @submit.prevent="
-                if (!confirm('Hapus ' + selected.length + ' produk yang dipilih?')) return;
-                $el.querySelector('[name=ids]').value = selected.join(',');
-                $el.submit();
+                confirmModal('Hapus ' + selected.length + ' produk yang dipilih?', () => {
+                    $el.querySelector('[name=ids]').value = selected.join(',');
+                    $el.submit();
+                })
               ">
             @csrf
             @method('DELETE')
@@ -130,9 +131,10 @@
                             <i class="bi bi-pencil"></i>
                         </a>
                         <form method="POST" action="{{ route('tenant.admin.products.destroy', $product) }}"
-                              class="d-inline" onsubmit="return confirm('Hapus produk ini?')">
+                              class="d-inline">
                             @csrf @method('DELETE')
-                            <button class="btn btn-sm btn-outline-danger" title="Hapus">
+                            <button type="button" class="btn btn-sm btn-outline-danger" title="Hapus"
+                                    onclick="confirmModal('Hapus produk ini?', () => this.closest('form').submit())">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </form>

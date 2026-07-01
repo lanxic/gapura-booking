@@ -68,10 +68,6 @@
         </div>
     </div>
 
-    @if(session('error'))
-    <div class="alert alert-danger small">{{ session('error') }}</div>
-    @endif
-
     @if($errors->any())
     <div class="alert alert-danger small">
         <ul class="mb-0 ps-3">

@@ -150,18 +150,17 @@ class CheckoutController extends Controller
             return back()->with('error', $e->getMessage())->withInput();
         }
 
-        $this->cart->clear();
-
         if (count($invoices) === 1) {
             $invoice = $invoices[0];
 
             if (in_array($paymentMethod, ['midtrans', 'doku'])) {
                 try {
                     $snapToken = $this->invoiceService->initiateSnapToken($invoice);
-                    return $this->invoiceRedirect($invoice->invoice_code)->with('snap_token', $snapToken);
                 } catch (\DomainException $e) {
                     return back()->with('error', $e->getMessage())->withInput();
                 }
+                $this->cart->clear();
+                return $this->invoiceRedirect($invoice->invoice_code)->with('snap_token', $snapToken);
             }
 
             try {
@@ -170,6 +169,7 @@ class CheckoutController extends Controller
                 return back()->with('error', $e->getMessage())->withInput();
             }
 
+            $this->cart->clear();
             return $this->invoiceRedirect($invoice->invoice_code);
         }
 
@@ -182,6 +182,7 @@ class CheckoutController extends Controller
             }
         }
 
+        $this->cart->clear();
         $bookingsRoute = app()->bound('current_tenant') ? 'tenant.account.bookings' : 'account.bookings';
         return redirect()->route($bookingsRoute)
             ->with('success', count($invoices) . ' tiket berhasil dipesan!');

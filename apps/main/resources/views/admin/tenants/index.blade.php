@@ -45,19 +45,19 @@
                 <td>
                     <form method="POST" action="{{ route('admin.tenants.toggle', $tenant) }}">
                         @csrf @method('PATCH')
-                        <button type="submit"
+                        <button type="button"
                                 class="badge border-0 {{ $tenant->is_active ? 'bg-success' : 'bg-secondary' }}"
-                                onclick="return confirm('{{ $tenant->is_active ? 'Nonaktifkan' : 'Aktifkan' }} tenant ini?')">
+                                onclick="confirmModal('{{ $tenant->is_active ? 'Nonaktifkan' : 'Aktifkan' }} tenant ini?', () => this.closest('form').submit())">
                             {{ $tenant->is_active ? 'Aktif' : 'Nonaktif' }}
                         </button>
                     </form>
                 </td>
                 <td class="text-end">
                     <a href="{{ route('admin.tenants.edit', $tenant) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
-                    <form method="POST" action="{{ route('admin.tenants.destroy', $tenant) }}" class="d-inline"
-                          onsubmit="return confirm('Hapus tenant ini? Semua data terkait akan ikut terhapus.')">
+                    <form method="POST" action="{{ route('admin.tenants.destroy', $tenant) }}" class="d-inline">
                         @csrf @method('DELETE')
-                        <button class="btn btn-sm btn-outline-danger">Hapus</button>
+                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                onclick="confirmModal('Hapus tenant ini? Semua data terkait akan ikut terhapus.', () => this.closest('form').submit(), 'Ya, Hapus')">Hapus</button>
                     </form>
                 </td>
             </tr>

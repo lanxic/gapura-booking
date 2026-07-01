@@ -48,10 +48,10 @@
                                 {{ $customer->is_active ? 'Nonaktifkan' : 'Aktifkan' }}
                             </button>
                         </form>
-                        <form method="POST" action="{{ route('admin.customers.destroy', $customer->id) }}"
-                              onsubmit="return confirm('Hapus customer ini?')">
+                        <form method="POST" action="{{ route('admin.customers.destroy', $customer->id) }}">
                             @csrf @method('DELETE')
-                            <button class="btn btn-sm btn-outline-danger">Hapus</button>
+                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                    onclick="confirmModal('Hapus customer ini?', () => this.closest('form').submit())">Hapus</button>
                         </form>
                     @else
                         <form method="POST" action="{{ route('admin.customers.restore', $customer->id) }}">

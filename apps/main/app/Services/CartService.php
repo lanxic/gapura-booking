@@ -15,7 +15,17 @@ class CartService
 
     public function add(int $slotId, int $paxAdult, int $paxChild, string $addonsJson = '[]'): void
     {
-        $cart   = session('cart', []);
+        $cart = session('cart', []);
+
+        foreach ($cart as $i => $item) {
+            $existingSlotId = $item['slotId'] ?? $item['slot_id'] ?? null;
+            if ((int) $existingSlotId === $slotId) {
+                $cart[$i] = compact('slotId', 'paxAdult', 'paxChild', 'addonsJson');
+                session(['cart' => $cart]);
+                return;
+            }
+        }
+
         $cart[] = compact('slotId', 'paxAdult', 'paxChild', 'addonsJson');
         session(['cart' => $cart]);
     }

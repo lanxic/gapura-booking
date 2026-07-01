@@ -67,8 +67,9 @@ Route::domain('{tenantSlug}.' . $appHost)->middleware('tenant.identify')->group(
     Route::get('/checkout',  [CheckoutController::class, 'index'])->name('tenant.checkout.index');
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('tenant.checkout.store');
 
+    Route::get('/invoice/{code}', [InvoiceController::class, 'show'])->name('tenant.invoice.show');
+
     Route::middleware('auth:web')->group(function () {
-        Route::get('/invoice/{code}',        [InvoiceController::class, 'show'])->name('tenant.invoice.show');
         Route::post('/invoice/{code}/retry', [InvoiceController::class, 'retry'])->name('tenant.invoice.retry');
     });
 
